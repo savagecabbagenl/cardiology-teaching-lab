@@ -61,7 +61,8 @@ label.ck{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;margin-
 .chart{position:relative;width:100%}
 .chart canvas{display:block;width:100%;height:100%}
 #pvWrap{height:470px}
-.trace{height:165px}
+#wigWrap{height:640px;margin-top:6px}
+.wighead{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin:6px 2px 0}
 .legend i{display:inline-block;width:18px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:5px}
 .legend i.dash{border-top-style:dashed}
@@ -92,7 +93,6 @@ details{margin-top:8px}
 details summary{cursor:pointer;font-weight:600;font-size:13px}
 details p, details li{font-size:12.5px;color:var(--muted)}
 .foot{color:var(--muted);font-size:11.5px;text-align:center;padding:4px 16px 18px}
-.tracegrid{display:grid;grid-template-columns:1fr;gap:6px;margin-top:12px}
 .status{font-size:12px;color:var(--muted)}
 @media (max-width:1250px){
   .wrap{grid-template-columns:310px minmax(0,1fr)}
@@ -104,6 +104,7 @@ details p, details li{font-size:12.5px;color:var(--muted)}
   .right{display:block}
   .right .panel + .panel{margin-top:12px}
   #pvWrap{height:360px}
+  #wigWrap{height:560px}
   .kpis{grid-template-columns:repeat(2,1fr)}
   main{order:-1}
 }
@@ -177,20 +178,18 @@ details p, details li{font-size:12.5px;color:var(--muted)}
         <span><i class="dash" style="border-color:var(--edpvr)"></i>EDPVR</span>
         <span><i class="dot" style="border-color:var(--ea)"></i>Ea (arterial elastance)</span>
       </div>
-      <div class="tracegrid">
-        <div class="chart trace"><canvas id="cP"></canvas></div>
-        <div class="legend" style="margin-top:0">
-          <span><i style="border-color:var(--lv)"></i>LV pressure</span>
-          <span><i style="border-color:var(--ao)"></i>Aortic pressure</span>
-          <span><i style="border-color:var(--la)"></i>LA pressure</span>
-        </div>
-        <div class="chart trace"><canvas id="cV"></canvas></div>
-        <div class="chart trace"><canvas id="cQ"></canvas></div>
-        <div class="legend" style="margin-top:0">
-          <span><i style="border-color:var(--ao)"></i>Aortic valve flow</span>
-          <span><i style="border-color:var(--la)"></i>Mitral valve flow</span>
-          <span>Negative flow = regurgitation</span>
-        </div>
+      <div class="wighead">
+        <h2 style="margin:0">Wiggers diagram</h2>
+        <span class="status">Same beat as the loop. The grey line moves with the red dot on the loop; hover or tap the diagram to mark that instant on the loop.</span>
+      </div>
+      <div class="chart" id="wigWrap"><canvas id="wig"></canvas></div>
+      <div class="legend">
+        <span><i style="border-color:var(--lv)"></i>LV pressure / volume</span>
+        <span><i style="border-color:var(--ao)"></i>Aortic pressure / aortic valve flow</span>
+        <span><i style="border-color:var(--la)"></i>LA pressure / mitral valve flow</span>
+        <span><i style="border-color:var(--ink)"></i>ECG, heart sounds</span>
+        <span>Negative flow = regurgitation</span>
+      </div>
       </div>
     </div>
   </main>
@@ -210,6 +209,11 @@ details p, details li{font-size:12.5px;color:var(--muted)}
         <p>The left ventricle is a time-varying elastance: pressure moves between the end-diastolic curve, P = A·(e<sup>β(V−V₀)</sup>−1), and the end-systolic line, P = Ees·(V−V₀), as an activation function rises and falls each beat. Relaxation speed stretches the fall of that activation; if relaxation is slow and the beat is short, it carries over into the next diastole.</p>
         <p>The LV is coupled to a left atrium with its own passive and active elastance, mitral and aortic valves, an arterial Windkessel (characteristic impedance, compliance and SVR), a systemic venous reservoir, a pulmonary compartment, and a simple right-heart flow source that returns venous blood to the lungs in proportion to venous pressure (no right ventricle as such). Blood volume is conserved, so congestion and low output come out of the model rather than being imposed.</p>
         <p>Valves follow the Bernoulli orifice relation, ΔP = (Q / (50·A))² with Q in mL/s and A in cm², so stenosis is set by valve area and regurgitation by effective regurgitant orifice area (EROA).</p>
+      </details>
+      <details>
+        <summary>Wiggers diagram</summary>
+        <p>The Wiggers diagram plots the same simulated beat as the loop against time. Pressures, volume and valve flows come straight from the model. The ECG is drawn to match the model's timing: the P wave with atrial contraction, the QRS just before ventricular contraction and the end of the T wave near aortic valve closure.</p>
+        <p>Heart sounds are also derived from the model: S1 at mitral closure, S2 at aortic closure (soft in severe AS), and a murmur wherever a jet across a valve or leak exceeds about 2 m/s (1 m/s for mitral stenosis). S3 is shown with rapid early filling in a failing or volume-loaded ventricle, and S4 with an atrial kick into a stiff ventricle with high end-diastolic pressure. These are teaching rules, not acoustic simulation; splitting of S2 and opening snaps are not shown.</p>
       </details>
       <details>
         <summary>Limitations</summary>
@@ -735,6 +739,7 @@ function drawPV() {
   if (S.cur) { ctx.fillStyle = css('--lv'); ctx.beginPath(); ctx.arc(X(S.cur.Vlv), Y(S.cur.Plv), 6, 0, 7); ctx.fill();
     ctx.strokeStyle = css('--panel'); ctx.lineWidth = 2; ctx.stroke(); }
   ctx.restore();
+  if (hoverI != null && hoverI < b.Vlv.length) { ctx.strokeStyle = css('--snap'); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(X(b.Vlv[hoverI]), Y(b.Plv[hoverI]), 8, 0, 7); ctx.stroke(); }
   // corner label
   ctx.font = '600 12px system-ui, sans-serif'; ctx.fillStyle = css('--ink'); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   ctx.fillText(preset.name + (anyChanged() ? ' (modified)' : ''), box.l + 8, box.t + 6);
@@ -743,32 +748,134 @@ function drawPV() {
 function anyChanged() { const base = Object.assign({}, NORMAL, preset.p); return Object.keys(sliderEls).some(k => Math.abs(P[k] - base[k]) > 1e-9); }
 
 // ---------- traces ----------
-function drawTrace(id, series, ylab, yminForce) {
-  const c = $(id), { ctx, w, h } = setup(c);
-  const b = S.lastBeat, T = b.T * 1000;
-  let lo = Infinity, hi = -Infinity;
-  for (const s of series) for (const v of s.y) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
-  if (yminForce != null) lo = Math.min(lo, yminForce);
-  const pad = (hi - lo) * 0.08 || 5; hi += pad; if (yminForce == null) lo -= pad;
-  const box = { l: 52, t: 8, w: w - 66, h: h - 44 };
-  const { X, Y } = axes(ctx, box, 0, T, lo, hi, 'Time in cardiac cycle (ms)', ylab, 8, 4);
-  ctx.save(); ctx.beginPath(); ctx.rect(box.l, box.t, box.w, box.h); ctx.clip();
-  if (lo < 0) { ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(T), Y(0)); ctx.stroke(); }
-  const ts = b.t.map(t => t * 1000);
-  for (const s of series) {
-    ctx.strokeStyle = css(s.c); ctx.lineWidth = s.wd || 2; if (s.dash) ctx.setLineDash(s.dash);
-    path(ctx, ts, s.y, X, Y, false); ctx.stroke(); ctx.setLineDash([]);
+// ---------- Wiggers diagram ----------
+// The beat is shown from 100 ms before ventricular activation so the QRS and S1 sit near the left edge.
+const WIG_OFF = 0.1;
+let hoverI = null; // index into S.lastBeat samples, set by hovering the Wiggers diagram
+function wigData(b, p) {
+  const n = b.t.length, T = b.T, dt = T / n;
+  const k = Math.round(WIG_OFF / dt) % n;
+  const ord = []; for (let j = 0; j < n; j++) ord.push((j - k + n) % n); // display j -> sample index
+  const ev = valveEvents(b);
+  const evT = {}; for (const [lab, i] of ev) evT[lab] = b.t[i];
+  // ECG: synthetic, timed to the model's atrial and ventricular activation
+  const pr = Math.min(0.16, 0.2 * T);
+  const wrap = d => { d = ((d % T) + T) % T; return d > T / 2 ? d - T : d; };
+  const g = (t, c, w, a) => { const d = wrap(t - c); return a * Math.exp(-0.5 * (d / w) * (d / w)); };
+  const tT = (evT.AVC ?? 0.3) - 0.07;
+  const af = p.Eaa <= 0;
+  const ecg = b.t.map(t => {
+    let y = g(t, -0.035, 0.007, -0.08) + g(t, -0.02, 0.009, 1) + g(t, -0.004, 0.009, -0.22) + g(t, tT, 0.045, 0.28);
+    if (af) y += 0.035 * (Math.sin(t * 2 * Math.PI * 7.3) + 0.6 * Math.sin(t * 2 * Math.PI * 11.1 + 1));
+    else y += g(t, T - pr + 0.03, 0.022, 0.14);
+    return y;
+  });
+  // Heart sounds: S1 at mitral closure, S2 at aortic closure, murmurs where a jet exceeds about 2 m/s
+  const amp = new Array(n).fill(0), types = new Set();
+  const burst = (tc, dur, a) => { for (let i = 0; i < n; i++) { const d = wrap(b.t[i] - tc); if (d >= 0 && d < dur) amp[i] = Math.max(amp[i], a * Math.sin(Math.PI * d / dur)); } };
+  if (evT.MVC != null) burst(evT.MVC, 0.05, p.MVA <= 1.5 ? 1 : 0.85);
+  if (evT.AVC != null) burst(evT.AVC, 0.04, p.AVA <= 1 ? 0.3 : 0.75);
+  const jet = v => Math.min(0.7, Math.max(0, (v - 2) / 3.5));
+  for (let i = 0; i < n; i++) {
+    const qa = b.Qav[i], qm = b.Qmv[i]; let a = 0;
+    if (qa > 0) { const m = jet(qa / (100 * p.AVA)); if (m > 0.04) { a = Math.max(a, m); types.add(p.AVA > 1.5 ? 'Systolic flow murmur (large stroke volume)' : preset.id === 'HCM' ? 'Systolic ejection murmur (LVOT obstruction)' : 'Systolic ejection murmur (aortic stenosis)'); } }
+    if (qa < 0 && p.ARA > 0) { const m = jet(-qa / (100 * p.ARA)) * 0.6; if (m > 0.04) { a = Math.max(a, m); types.add('Early diastolic murmur (AR)'); } }
+    if (qm < 0 && p.MRA > 0) { const m = jet(-qm / (100 * p.MRA)); if (m > 0.04) { a = Math.max(a, m); types.add('Holosystolic murmur (MR)'); } }
+    if (qm > 0 && p.MVA <= 2) { const m = Math.min(0.6, Math.max(0, (qm / (100 * p.MVA) - 1) / 2)); if (m > 0.04) { a = Math.max(a, m); types.add('Diastolic rumble (MS)'); } }
+    amp[i] = Math.max(amp[i], a);
   }
-  const cx = X(S.tb * 1000); ctx.strokeStyle = css('--muted'); ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(cx, box.t); ctx.lineTo(cx, box.t + box.h); ctx.stroke(); ctx.globalAlpha = 1;
-  ctx.restore();
+  // S4: atrial kick into a stiff ventricle with high end-diastolic pressure. S3: rapid early filling at high LA pressure.
+  const m = PVSim.metrics(b, p);
+  if (!af && p.Eaa > 0.05 && m.LVEDP > 18) { burst(T - pr + 0.11, 0.035, 0.45); types.add('S4'); }
+  if (evT.MVO != null && p.MVA > 1.5 && ((m.EF < 40 && m.LVEDP > 12) || m.RF > 40)) { burst(evT.MVO + 0.12, 0.035, 0.45); types.add('S3'); }
+  return { n, T, ord, ev, ecg, amp, types: [...types] };
 }
+function noise(i) { const x = Math.sin(i * 12.9898) * 43758.5453; return (x - Math.floor(x)) * 2 - 1; }
+function drawWiggers() {
+  const c = $('wig'), { ctx, w, h } = setup(c);
+  const b = S.lastBeat, D = wigData(b, P), n = D.n, Tms = D.T * 1000;
+  const L = 58, R = 12, top = 26, bot = 30;
+  const lanes = [
+    { key: 'ecg', f: 0.11, lab: 'ECG' },
+    { key: 'p', f: 0.37, lab: 'Pressure (mmHg)' },
+    { key: 'v', f: 0.17, lab: 'Volume (mL)' },
+    { key: 's', f: 0.13, lab: 'Sounds' },
+    { key: 'q', f: 0.17, lab: 'Flow (mL/s)' },
+  ];
+  const gap = 8, H = h - top - bot - gap * (lanes.length - 1);
+  let y = top; for (const ln of lanes) { ln.t = y; ln.h = H * ln.f; y += ln.h + gap; }
+  const W = w - L - R, X = j => L + j / (n - 1) * W;
+  ctx.font = '11px system-ui, sans-serif';
+  // time grid
+  const sx = niceStep(Tms, 8);
+  ctx.strokeStyle = css('--grid'); ctx.lineWidth = 1; ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let tm = 0; tm <= Tms + 1e-6; tm += sx) { const px = L + tm / Tms * W; ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, h - bot); ctx.stroke(); ctx.fillText(Math.round(tm - WIG_OFF * 1000), px, h - bot + 4); }
+  ctx.fillText('Time from onset of ventricular contraction (ms)', L + W / 2, h - 13);
+  // phase bands and valve events
+  const jOf = i => D.ord.indexOf(i);
+  const evs = D.ev.map(([lab, i]) => ({ lab, j: jOf(i) })).filter(e => e.j >= 0);
+  const ej = {}; for (const e of evs) ej[e.lab] = e.j;
+  const band = (a, z, lab) => { if (a == null || z == null) return; const segs = z >= a ? [[a, z]] : [[a, n - 1], [0, z]]; ctx.fillStyle = css('--chip'); for (const [s, e] of segs) ctx.fillRect(X(s), 2, X(e) - X(s), top - 8); const mid = z >= a ? (a + z) / 2 : (a + z + n) / 2 % n; ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; if (Math.abs(X(z >= a ? z : z + n) - X(a)) > 30) ctx.fillText(lab, X(mid), 2 + (top - 8) / 2); };
+  ctx.font = '600 10.5px system-ui, sans-serif';
+  band(ej.MVC, ej.AVO, 'IVC'); band(ej.AVO, ej.AVC, 'Ejection'); band(ej.AVC, ej.MVO, 'IVR'); band(ej.MVO, ej.MVC, 'Filling');
+  for (const e of evs) { ctx.strokeStyle = css('--muted'); ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(e.j), top); ctx.lineTo(X(e.j), h - bot); ctx.stroke(); ctx.setLineDash([]); }
+  // lane frames and labels
+  ctx.font = '11px system-ui, sans-serif';
+  for (const ln of lanes) {
+    ctx.strokeStyle = css('--line'); ctx.strokeRect(L, ln.t, W, ln.h);
+    ctx.save(); ctx.fillStyle = css('--muted'); ctx.translate(14, ln.t + ln.h / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ln.lab, 0, 0); ctx.restore();
+  }
+  const series = (ln, arrs, lo, hi, ticks) => {
+    const Y = v => ln.t + ln.h - (v - lo) / (hi - lo) * ln.h;
+    if (ticks) { const st = niceStep(hi - lo, ticks); ctx.fillStyle = css('--muted'); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; for (let v = Math.ceil(lo / st) * st; v <= hi + 1e-9; v += st) { const py = Y(v); ctx.strokeStyle = css('--grid'); ctx.beginPath(); ctx.moveTo(L, py); ctx.lineTo(L + W, py); ctx.stroke(); ctx.fillText(+v.toFixed(3), L - 5, py); } }
+    ctx.save(); ctx.beginPath(); ctx.rect(L, ln.t, W, ln.h); ctx.clip();
+    if (lo < 0 && hi > 0) { ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(L, Y(0)); ctx.lineTo(L + W, Y(0)); ctx.stroke(); }
+    for (const s of arrs) { ctx.strokeStyle = css(s.c); ctx.lineWidth = s.wd || 2; ctx.beginPath(); for (let j = 0; j < n; j++) { const px = X(j), py = Y(s.y[D.ord[j]]); j ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke(); }
+    ctx.restore();
+    return Y;
+  };
+  const rng = (arrs, pad, zero) => { let lo = Infinity, hi = -Infinity; for (const a of arrs) for (const v of a) { lo = Math.min(lo, v); hi = Math.max(hi, v); } if (zero) lo = Math.min(lo, 0); const p = (hi - lo) * pad || 5; return [zero ? lo : lo - p, hi + p]; };
+  const Ys = {};
+  Ys.ecg = series(lanes[0], [{ y: D.ecg, c: '--ink', wd: 1.6 }], -0.4, 1.15, 0);
+  { const [lo, hi] = rng([b.Plv, b.Pao, b.Pla], 0.06, true); Ys.p = series(lanes[1], [{ y: b.Pao, c: '--ao' }, { y: b.Pla, c: '--la' }, { y: b.Plv, c: '--lv', wd: 2.4 }], lo, hi, 4); }
+  { const [lo, hi] = rng([b.Vlv], 0.12); Ys.v = series(lanes[2], [{ y: b.Vlv, c: '--lv', wd: 2.4 }], lo, hi, 3); }
+  { const ln = lanes[3], mid = ln.t + ln.h / 2; ctx.save(); ctx.beginPath(); ctx.rect(L, ln.t, W, ln.h); ctx.clip(); ctx.strokeStyle = css('--ink'); ctx.lineWidth = 1; ctx.beginPath();
+    for (let j = 0; j < n; j++) { const a = D.amp[D.ord[j]]; if (a <= 0.01) continue; const px = X(j), dy = a * noise(j) * ln.h * 0.46; ctx.moveTo(px, mid - dy); ctx.lineTo(px, mid + dy); }
+    ctx.stroke(); ctx.strokeStyle = css('--grid'); ctx.beginPath(); ctx.moveTo(L, mid); ctx.lineTo(L + W, mid); ctx.stroke();
+    ctx.fillStyle = css('--muted'); ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.font = '10.5px system-ui, sans-serif';
+    ctx.fillText(['S1, S2'].concat(D.types).join(' · '), L + W - 6, ln.t + 3); ctx.restore(); }
+  { const [lo, hi] = rng([b.Qav, b.Qmv], 0.08); Ys.q = series(lanes[4], [{ y: b.Qav, c: '--ao' }, { y: b.Qmv, c: '--la' }], lo, hi, 3); }
+  // S1 / S2 labels in the sound lane
+  ctx.font = '600 10px system-ui, sans-serif'; ctx.fillStyle = css('--ink'); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  if (ej.MVC != null) ctx.fillText('S1', X(ej.MVC) + 8, lanes[3].t + lanes[3].h - 2);
+  if (ej.AVC != null) ctx.fillText('S2', X(ej.AVC) + 6, lanes[3].t + lanes[3].h - 2);
+  // event labels over the pressure lane
+  ctx.font = '600 10px system-ui, sans-serif'; ctx.textBaseline = 'top';
+  for (const e of evs) { ctx.fillStyle = css('--panel'); const tw = ctx.measureText(e.lab).width + 6; ctx.fillRect(X(e.j) - tw / 2, lanes[1].t + 2, tw, 13); ctx.fillStyle = css('--ink'); ctx.fillText(e.lab, X(e.j), lanes[1].t + 3); }
+  // cursors: running (solid) and hover (accent)
+  const cursor = (i, col, dots) => {
+    const j = D.ord.indexOf(i); if (j < 0) return; const px = X(j);
+    ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.75; ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, h - bot); ctx.stroke(); ctx.globalAlpha = 1;
+    if (dots) { ctx.fillStyle = css('--lv'); for (const [Y, v] of [[Ys.p, b.Plv[i]], [Ys.v, b.Vlv[i]]]) { ctx.beginPath(); ctx.arc(px, Y(v), 4, 0, 7); ctx.fill(); } }
+  };
+  const iRun = Math.min(n - 1, Math.max(0, Math.round(S.tb / D.T * n)));
+  cursor(iRun, css('--muted'), true);
+  if (hoverI != null && hoverI < n) cursor(hoverI, css('--snap'), false);
+  drawWiggers.map = { L, W, n, ord: D.ord };
+}
+function wigHover(e) {
+  const m = drawWiggers.map; if (!m) return;
+  const r = $('wig').getBoundingClientRect(), x = e.clientX - r.left;
+  if (x < m.L || x > m.L + m.W) { hoverI = null; dirty = true; return; }
+  const j = Math.round((x - m.L) / m.W * (m.n - 1));
+  hoverI = m.ord[Math.min(m.n - 1, Math.max(0, j))]; dirty = true;
+}
+$('wig').addEventListener('pointermove', wigHover);
+$('wig').addEventListener('pointerdown', wigHover);
+$('wig').addEventListener('pointerleave', () => { hoverI = null; dirty = true; });
 function drawAll() {
   drawPV();
-  const b = S.lastBeat;
-  drawTrace('cP', [{ y: b.Pao, c: '--ao' }, { y: b.Pla, c: '--la' }, { y: b.Plv, c: '--lv', wd: 2.4 }], 'Pressure (mmHg)', 0);
-  drawTrace('cV', [{ y: b.Vlv, c: '--lv', wd: 2.4 }], 'LV volume (mL)');
-  drawTrace('cQ', [{ y: b.Qav, c: '--ao' }, { y: b.Qmv, c: '--la' }], 'Valve flow (mL/s)');
+  drawWiggers();
 }
 
 // ---------- loop ----------

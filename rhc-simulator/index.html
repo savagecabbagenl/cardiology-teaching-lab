@@ -147,6 +147,7 @@ th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);vertic
 th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
 td.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 td.ref{color:var(--muted);font-size:12px;white-space:nowrap}
+#dTable td.ref,#dTable td.wrap{white-space:normal}
 .flag{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.05em;padding:1px 6px;border-radius:999px;margin-left:6px;vertical-align:1px;font-family:var(--font-body)}
 .flag.hi{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
 .flag.lo{background:color-mix(in srgb,var(--deox) 18%,transparent);color:var(--deox)}
@@ -346,7 +347,7 @@ footer{color:var(--muted);font-size:12px;max-width:90ch}
     </div>
   </section>
 
-  <footer>Educational model. Waveforms are generated from a timing-based model of the cardiac cycle with plausible textbook values, not from patient data. Gorlin areas use the simulated flow and HR. Do not use for clinical decisions.</footer>
+  <footer>Educational model. Waveforms are generated from a timing-based model of the cardiac cycle with plausible textbook values, not from patient data. Gorlin areas use the measured flow and HR; in the stenosis cases the valve area is held fixed, so the gradient changes with HR. Reference values follow the 2022 ESC/ERS pulmonary hypertension and 2020 ACC/AHA valvular guidelines (reviewed November 2026). Do not use for clinical decisions.</footer>
 </div>
 
 <script>
@@ -379,26 +380,26 @@ const CASES=[
   notes:['RA a wave slightly larger than v; LA/PCWP v wave slightly larger than a.','PCWP is a delayed, damped echo of LA pressure, about 100–150 ms later.','PA diastolic sits a few mmHg above PCWP; LVEDP is close to mean PCWP.']},
  {id:'hfref',name:'HFrEF, low output',o:{hr:94,co:2.9,hb:12,tdCond:'lowco',
    ra:{mean:13,a:4,x:3,v:6,y:4},la:{mean:26,a:6,x:3,v:15,y:8},lv:{gE:4,gA:2,gAV:3},
-   pa:{sys:54,dia:28},ao:{sys:98,dia:66}},
-  notes:['Post-capillary pulmonary hypertension: high PCWP with a normal transpulmonary gradient.','Low SvO₂ reflects high oxygen extraction at a low cardiac output.','Thermodilution curve is low and prolonged. Small errors in the tail of the curve matter more.']},
- {id:'ms',name:'Mitral stenosis',o:{hr:88,co:3.8,hb:13,
+   pa:{sys:38,dia:26},ao:{sys:98,dia:66}},
+  notes:['Isolated post-capillary pulmonary hypertension (IpcPH): mPAP above 20, PCWP above 15 and PVR 2 WU or less (2022 ESC/ERS). The PA pressure is raised passively by the high left-sided filling pressure.','If PVR were above 2 WU as well, this would be combined post- and pre-capillary PH (CpcPH), which carries a worse prognosis.','Low SvO₂ reflects high oxygen extraction at a low cardiac output.','Thermodilution curve is low and prolonged. Small errors in the tail of the curve matter more.']},
+ {id:'ms',name:'Mitral stenosis',valve:'ms',o:{hr:88,co:3.8,hb:13,
    la:{mean:25,a:10,x:4,v:9,y:3,yDel:0.16,ySig:0.11},lv:{gE:20,gA:9,tau:0.55,gAV:4},
    ra:{mean:9,a:5,v:3},pa:{sys:58,dia:30},ao:{sys:112,dia:72}},
-  notes:['Diastolic gradient between LA (or PCWP) and LV persists through diastole. Shade it on the monitor with LA + LV.','Slow y descent: the LA empties slowly through the narrow valve.','PCWP overestimates the true transmitral gradient because of its phase delay. Compare PCWP to direct LA via transseptal.','Switch to AF to see the a wave disappear and the gradient vary beat to beat; faster HR shortens diastole and raises the gradient.']},
+  notes:['Diastolic gradient between LA (or PCWP) and LV persists through diastole. Shade it on the monitor with LA + LV.','Slow y descent: the LA empties slowly through the narrow valve.','PCWP overestimates the true transmitral gradient because of its phase delay. Compare PCWP to direct LA via transseptal.','Switch to AF to see the a wave disappear and the gradient vary beat to beat. A faster HR shortens diastole: the valve area stays fixed, so the gradient and LA pressure rise steeply (gradient scales with the square of diastolic flow rate).','Gorlin area depends on the measured CO. Change the assumed VO₂ in the Fick bench to see how an output error moves the calculated area.']},
  {id:'mr',name:'Severe mitral regurgitation',o:{hr:88,co:3.8,
    la:{mean:24,a:5,x:0,c:0,v:30,vL:0.13,vR:0.05,y:13,ySig:0.06},lv:{gE:6,gA:1,tau:0.07,gAV:3},
    ra:{mean:9},pa:{sys:52,dia:26},ao:{sys:110,dia:68}},
-  notes:['Giant v wave on LA and PCWP, often more than twice the mean.','The x descent is lost because the LA fills from the LV during systole.','A large v wave is not specific to MR. It also appears with a stiff LA or a VSD.']},
- {id:'as',name:'Aortic stenosis',o:{hr:70,co:4.4,etAdd:0.04,
+  notes:['Giant v wave on LA and PCWP, well above the mean. A v wave more than twice the mean PCWP (or more than 10 mmHg above it) suggests severe MR, but it is neither sensitive nor specific.','The PCWP–LV "gradient" in the worksheet is an artefact of the delayed wedge v wave, not stenosis. Compare with the direct LA–LV gradient.','The x descent is lost because the LA fills from the LV during systole.','A large v wave is not specific to MR. It also appears with a stiff LA or a VSD.']},
+ {id:'as',name:'Aortic stenosis',valve:'as',o:{hr:70,co:4.4,etAdd:0.04,
    la:{mean:16,a:11,v:6},lv:{gE:3,gA:5,gAV:86},
-   ao:{sys:112,dia:72,tp:0.62,up:2,nf:0.72,notch:1.2},pa:{sys:38,dia:18},ra:{mean:6}},
-  notes:['Place the pigtail in the LV and turn on the femoral sheath to see the systolic gradient.','Aortic upstroke is slow and late (parvus et tardus); the dicrotic notch is soft.','Peak-to-peak gradient is a cath measurement only. Peak instantaneous is larger; mean gradient is what Gorlin uses.','Prominent a wave on PCWP from a stiff, hypertrophied LV.']},
+   ao:{sys:112,dia:72,tp:0.8,up:3,nf:0.85,notch:1.2},pa:{sys:38,dia:18},ra:{mean:6}},
+  notes:['Place the pigtail in the LV and turn on the femoral sheath to see the systolic gradient.','Aortic upstroke is slow and late (parvus et tardus); the dicrotic notch is soft.','Peak-to-peak gradient is a cath measurement only. Peak instantaneous is larger; mean gradient is what Gorlin uses.','Prominent a wave on PCWP from a stiff, hypertrophied LV.','The femoral sheath trace is delayed and shows peripheral amplification. Realign it before reading a gradient, or better, record LV and ascending aorta at the same time (dual-lumen pigtail or two catheters). The LV–Ao tile uses the central aorta.','The valve area is fixed: raise HR and the shorter ejection time increases the gradient. Changing the assumed VO₂ in the Fick bench shows how a CO error moves the Gorlin area.']},
  {id:'pah',name:'Pulmonary arterial hypertension',o:{hr:92,co:3.2,hb:15,
    ra:{mean:13,a:8,x:3,v:6,y:4},rv:{gA:3},pa:{sys:82,dia:36,tp:0.24,notch:4},la:{mean:9},ao:{sys:106,dia:70}},
-  notes:['Pre-capillary PH: mPAP above 20 with PCWP 15 or less and PVR above 2 WU.','Large DPG (PA diastolic minus PCWP) points to pulmonary vascular disease.','Prominent RA a wave from a hypertrophied, stiff RV.']},
+  notes:['Pre-capillary PH: mPAP above 20 with PCWP 15 or less and PVR above 2 WU.','Very high PVR is the defining number. DPG (PA diastolic minus PCWP) is high too, but since 2022 it is only a supporting measure, mainly used in post-capillary PH.','Prominent RA a wave from a hypertrophied, stiff RV.']},
  {id:'tr',name:'Severe tricuspid regurgitation',o:{hr:80,co:3.6,tdCond:'tr',
    ra:{mean:16,a:2,x:0,c:0,cv:17,v:3,y:10,ySig:0.06},rv:{gE:2},pa:{sys:36,dia:16},la:{mean:12},ao:{sys:108,dia:68}},
-  notes:['RA is ventricularized: a large cv wave replaces the x descent, then a steep y descent.','Thermodilution is unreliable: indicator washes back and forth across the valve, the curve is prolonged and irregular, and CO is usually underestimated. Use Fick.']},
+  notes:['RA is ventricularized: a large cv wave replaces the x descent, then a steep y descent.','Thermodilution curves are prolonged and irregular here, so runs scatter more. Even so, studies show thermodilution still agrees with direct Fick in severe TR, and the 2022 ESC/ERS guidelines prefer it to indirect Fick with an assumed VO₂. If the runs are implausible, use direct Fick with measured VO₂.']},
  {id:'constrict',name:'Constrictive pericarditis',o:{hr:94,co:3.4,kuss:5,discord:8,
    ra:{mean:18,a:6,x:8,v:5,y:12,yDel:0.07,ySig:0.035},la:{mean:18,a:5,x:7,v:5,y:12,yDel:0.07,ySig:0.035},
    rv:{gE:11,tau:0.05},lv:{gE:11,tau:0.05},pa:{sys:36,dia:20},ao:{sys:104,dia:70}},
@@ -407,7 +408,7 @@ const CASES=[
    ra:{mean:16,a:5,x:6,v:4,y:0},la:{mean:17,a:4,x:6,v:4,y:0},rv:{gE:1.5},lv:{gE:2},
    pa:{sys:32,dia:18},ao:{sys:92,dia:66}},
   notes:['Equal diastolic pressures, like constriction, but the y descent is blunted because the heart cannot fill in early diastole.','With respiration on, aortic systolic pressure falls more than 10 mmHg on inspiration (pulsus paradoxus). Put the pigtail in the aorta.']},
- {id:'asd',name:'Atrial septal defect',o:{hr:78,co:4.6,qp:9.2,tdCond:'shunt',
+ {id:'asd',name:'Atrial septal defect',o:{hr:78,co:5.0,qp:10.0,tdCond:'shunt',
    ra:{mean:7,a:6,v:6},la:{mean:8,a:5,v:6},rv:{gE:3,gAV:9},pa:{sys:38,dia:14},ao:{sys:118,dia:74}},
   notes:['Oxygen step-up from SVC/IVC to RA. Qp:Qs near 2 here.','Fick with a PA saturation measures pulmonary flow (Qp), not systemic flow.','High flow across a normal pulmonary valve gives a small RV–PA systolic gradient.','LA and RA pressures are nearly equal because they communicate.']}
 ];
@@ -508,13 +509,25 @@ const st={caseIdx:0,P:null,mystery:false,visited:new Set(),hr:72,rhythm:'sinus',
 const live=makeCtx();
 
 function loadCase(i,mystery){st.caseIdx=i;st.mystery=!!mystery;st.visited=new Set();
-  const c=CASES[i];st.P=merge(BASE,c.o);st.hr=st.P.hr;st.rhythm=st.P.rhythm;
+  const c=CASES[i];st.P0=merge(BASE,c.o);st.P=st.P0;st.hr=st.P.hr;st.valveRef=null;st.rhythm=st.P.rhythm;
   $('#hr').value=st.hr;setSeg('#rhythmSeg',st.rhythm);
   st.td.runs=[];
   initFickFromCase();initTdFromCase();
   applyPhysiology();
   renderCases();renderNotes();renderTables();renderFick();renderTd();renderRuns();}
+/* Fixed valve orifice: Gorlin says gradient ∝ (flow per second of filling or ejection)². The case pressures are tuned at the
+   case HR in sinus rhythm; at other HR or in AF, rescale the stenotic gradient so the valve area stays constant. */
+function valveAdjust(){const c=CASES[st.caseIdx];st.P=st.P0;if(!c.valve)return;const P0=st.P0;
+  const rate=(S,hr)=>P0.co*1000/hr/(c.valve==='ms'?S.dfp:S.sep),gr=S=>c.valve==='ms'?S.mvLA:S.avMean;
+  if(!st.valveRef){const S0=computeStats(P0,P0.hr,'sinus');st.valveRef={g:gr(S0),r:rate(S0,P0.hr)};}
+  if(st.hr===P0.hr&&st.rhythm==='sinus')return;
+  const P=JSON.parse(JSON.stringify(P0));
+  for(let it=0;it<3;it++){const S=computeStats(P,st.hr,st.rhythm),g=gr(S),tgt=st.valveRef.g*Math.pow(rate(S,st.hr)/st.valveRef.r,2);
+    if(c.valve==='ms'){const k=tgt/Math.max(0.5,g);P.lv.gE*=k;P.lv.gA*=k;P.la.mean+=tgt-g;}
+    else{P.lv.gAV*=tgt/Math.max(0.5,g);}}
+  st.P=P;}
 function applyPhysiology(){
+  valveAdjust();
   live.P=st.P;live.rhythm=st.rhythm;live.resp=st.resp;live.meanT=60/st.hr;
   const tc=templateCtx(st.P,st.hr,st.rhythm);live.off=tc.off;
   for(const b of live.beats){Object.assign(b,makeTiming(b.T,st.P));b.sinus=st.rhythm==='sinus';}
@@ -669,45 +682,54 @@ function renderTiles(force){const now=performance.now();if(!force&&now-tileTick<
 
 /* ============================== tables ============================== */
 const NORM={RA:'mean 2–6',RV:'15–30 / 2–8',PA:'15–30 / 4–12 (mean ≤20)',PCWP:'mean 6–12',LA:'mean 6–12',LV:'100–140 / 3–12',Ao:'100–140 / 60–90'};
-function flag(v,lo,hi){if(v>hi)return'<span class="flag hi">HIGH</span>';if(v<lo)return'<span class="flag lo">LOW</span>';return'';}
+function flag(v,lo,hi){v=Math.round(v*100)/100;if(v>hi)return'<span class="flag hi">HIGH</span>';if(v<lo)return'<span class="flag lo">LOW</span>';return'';}
 function coUsed(){const td=tdReported();if(td)return{co:td,src:'thermodilution'};return{co:fickResult().co,src:'Fick'};}
+/* With a shunt, systemic (Qs) and pulmonary (Qp) flow differ: SVR, CI, CPO and valve areas use Qs, PVR uses Qp. */
+function flows(){if(!st.P.qp){const u=coUsed();return{qs:u.co,qp:u.co,shunt:false,src:u.src+' cardiac output'+(u.src==='Fick'?' (inject to use thermodilution)':'')};}
+  const f=st.fick,s=st.sats,vo2=f.vo2i*f.bsa,cap=1.36*f.hb*10,r=fickResult(),td=tdReported();
+  if(td)return{qp:td,qs:td/r.qpqs,shunt:true,src:'thermodilution for Qp (it measures right-heart output); Qs = Qp ÷ Qp:Qs'};
+  return{qs:vo2/(cap*Math.max(0.5,f.sao2-s.mv)/100),qp:vo2/(cap*Math.max(0.5,Math.max(f.sao2,95)-s.pa)/100),shunt:true,src:'Fick: Qs from mixed venous (Flamm), Qp from PA and pulmonary venous saturations'};}
+function phClass(mpap,pcw,pvr){if(mpap<=20)return'No PH (mPAP ≤ 20)';if(pcw<=15)return pvr>2?'Pre-capillary PH':'Unclassified PH (high flow?)';return pvr>2?'Combined post- and pre-capillary (CpcPH)':'Isolated post-capillary (IpcPH)';}
 function renderTables(){const S=st.stats,vis=k=>!st.mystery||st.visited.has(k);
   const hidden='<span class="hidden-val">visit this chamber</span>';
   const rows=[
-   ['RA','RA',()=>`${S.RA.a!=null?r0(S.RA.a):'–'} / ${r0(S.RA.v)} (${r0(S.RA.mean)})${flag(S.RA.mean,2,7)}`],
-   ['RV','RV',()=>`${r0(S.RV.sys)} / ${r0(S.RV.edp)}${flag(S.RV.sys,15,30)}`],
-   ['PA','PA',()=>`${r0(S.PA.sys)} / ${r0(S.PA.dia)} (${r0(S.PA.mean)})${flag(S.PA.mean,9,20)}`],
-   ['PCWP','PCWP',()=>`${S.PCWP.a!=null?r0(S.PCWP.a):'–'} / ${r0(S.PCWP.v)} (${r0(S.PCWP.mean)})${flag(S.PCWP.mean,5,12)}`],
-   ['LA','LA (direct)',()=>`${S.LA.a!=null?r0(S.LA.a):'–'} / ${r0(S.LA.v)} (${r0(S.LA.mean)})${flag(S.LA.mean,5,12)}`],
-   ['LV','LV',()=>`${r0(S.LV.sys)} / ${r0(S.LV.edp)}${flag(S.LV.edp,3,12)}`],
+   ['RA','RA',()=>`${S.RA.a!=null?r0(S.RA.a):'–'} / ${r0(S.RA.v)} (${r0(S.RA.mean)})${flag(r0(S.RA.mean),2,6)}`],
+   ['RV','RV',()=>`${r0(S.RV.sys)} / ${r0(S.RV.edp)}${flag(r0(S.RV.sys),15,30)}`],
+   ['PA','PA',()=>`${r0(S.PA.sys)} / ${r0(S.PA.dia)} (${r0(S.PA.mean)})${flag(r0(S.PA.mean),-99,20)}`],
+   ['PCWP','PCWP',()=>`${S.PCWP.a!=null?r0(S.PCWP.a):'–'} / ${r0(S.PCWP.v)} (${r0(S.PCWP.mean)})${flag(r0(S.PCWP.mean),6,12)}`],
+   ['LA','LA (direct)',()=>`${S.LA.a!=null?r0(S.LA.a):'–'} / ${r0(S.LA.v)} (${r0(S.LA.mean)})${flag(r0(S.LA.mean),6,12)}`],
+   ['LV','LV',()=>`${r0(S.LV.sys)} / ${r0(S.LV.edp)}${flag(r0(S.LV.edp),3,12)}`],
    ['Ao','Aorta',()=>`${r0(S.Ao.sys)} / ${r0(S.Ao.dia)} (${r0(S.Ao.mean)})`]];
   $('#pTable tbody').innerHTML=rows.map(([k,l,f])=>`<tr><td>${l}</td><td class="num">${vis(k)?f():hidden}</td><td class="ref">${NORM[k]}</td></tr>`).join('');
-  const {co,src}=coUsed();const bsa=st.fick.bsa;const ci=co/bsa;
+  const F=flows(),co=F.qs,qp=F.qp,src=F.src;const bsa=st.fick.bsa;const ci=co/bsa;
   const map=S.Ao.mean,rap=S.RA.mean,mpap=S.PA.mean,pcw=S.PCWP.mean;
-  const svr=80*(map-rap)/co,pvr=(mpap-pcw)/co,tpg=mpap-pcw,dpg=S.PA.dia-pcw,papi=(S.PA.sys-S.PA.dia)/Math.max(1,rap),cpo=map*co/451;
+  const svr=80*(map-rap)/co,pvr=(mpap-pcw)/qp,tpg=mpap-pcw,dpg=S.PA.dia-pcw,papi=(S.PA.sys-S.PA.dia)/Math.max(1,rap),cpo=map*co/451;
   const flowBeat=co*1000/S.hr;
   const mva=S.mvLA>2?(flowBeat/S.dfp)/(37.7*Math.sqrt(S.mvLA)):null;
   const ava=S.avMean>4?(flowBeat/S.sep)/(44.3*Math.sqrt(S.avMean)):null;
   const qpqs=fickResult().qpqs;
   const D=[
-   ['Cardiac output',`${f1(co)} L/min`,'4–8',null,()=>true,flag(co,4,8)],
-   ['Cardiac index',`${f2(ci)} L/min/m²`,'2.5–4.0',null,()=>true,flag(ci,2.4,4.2)],
-   ['SVR',`${r0(svr)} dyn·s·cm⁻⁵`,'800–1200',null,()=>vis('Ao')&&vis('RA'),flag(svr,800,1200)],
-   ['PVR',`${f1(pvr)} WU`,'< 2',null,()=>vis('PA')&&vis('PCWP'),flag(pvr,-1,2)],
-   ['Transpulmonary gradient',`${r0(tpg)} mmHg`,'< 12',null,()=>vis('PA')&&vis('PCWP'),flag(tpg,-1,12)],
-   ['Diastolic pulmonary gradient',`${r0(dpg)} mmHg`,'< 7',null,()=>vis('PA')&&vis('PCWP'),flag(dpg,-99,7)],
-   ['PAPi',`${f1(papi)}`,'> 0.9',null,()=>vis('PA')&&vis('RA'),flag(papi,0.9,99)],
-   ['RA : PCWP',`${f2(rap/pcw)}`,'< 0.6',null,()=>vis('RA')&&vis('PCWP'),flag(rap/pcw,-1,0.63)],
-   ['Cardiac power output',`${f2(cpo)} W`,'> 0.6',null,()=>vis('Ao'),flag(cpo,0.6,99)],
-   ['Mitral mean gradient, LA–LV',`${f1(S.mvLA)} mmHg`,'< 2',null,()=>vis('LA')&&vis('LV'),flag(S.mvLA,-99,3)],
-   ['Mitral mean gradient, PCWP–LV',`${f1(S.mvPCWP)} mmHg`,'overestimates',null,()=>vis('PCWP')&&vis('LV'),''],
-   ['Mitral valve area (Gorlin, LA)',mva?`${f2(mva)} cm²`:'no significant gradient','4–6',null,()=>vis('LA')&&vis('LV'),mva&&mva<1.5?'<span class="flag hi">STENOSIS</span>':''],
-   ['Aortic mean gradient',`${f1(S.avMean)} mmHg`,'< 5',null,()=>vis('LV')&&vis('Ao'),flag(S.avMean,-99,10)],
+   [F.shunt?'Systemic flow (Qs)':'Cardiac output',`${f1(co)} L/min`,'4–8',null,()=>true,flag(Math.round(co*10)/10,4,8)],
+   ...(F.shunt?[['Pulmonary flow (Qp)',`${f1(qp)} L/min`,'≈ Qs',null,()=>true,'']]:[]),
+   ['Cardiac index'+(F.shunt?' (systemic)':''),`${f2(ci)} L/min/m²`,'2.5–4.0',null,()=>true,flag(ci,2.5,4.0)],
+   ['SVR',`${r0(svr)} dyn·s·cm⁻⁵`,'700–1600',null,()=>vis('Ao')&&vis('RA'),flag(r0(svr),700,1600)],
+   ['PVR'+(F.shunt?' (uses Qp)':''),`${f1(pvr)} WU`,'≤ 2',null,()=>vis('PA')&&vis('PCWP'),flag(Math.round(pvr*10)/10,-1,2)],
+   ['PH classification (2022 ESC/ERS)',phClass(r0(mpap),r0(pcw),Math.round(pvr*10)/10),'numbers only',null,()=>vis('PA')&&vis('PCWP'),''],
+   ['Transpulmonary gradient',`${r0(tpg)} mmHg`,'< 12 (legacy)',null,()=>vis('PA')&&vis('PCWP'),''],
+   ['Diastolic pulmonary gradient',`${r0(dpg)} mmHg`,'< 7',null,()=>vis('PA')&&vis('PCWP'),flag(r0(dpg),-99,6)],
+   ['PAPi ¹',`${f1(papi)}`,'> 0.9',null,()=>vis('PA')&&vis('RA'),flag(papi,0.9,99)],
+   ['RA : PCWP ¹',`${f2(rap/pcw)}`,'< 0.63',null,()=>vis('RA')&&vis('PCWP'),flag(rap/pcw,-1,0.63)],
+   ['Cardiac power output',`${f2(cpo)} W`,'> 0.6',null,()=>vis('Ao'),flag(Math.round(cpo*100)/100,0.6,99)],
+   ['Mitral mean gradient, LA–LV',`${f1(S.mvLA)} mmHg`,'< 2',null,()=>vis('LA')&&vis('LV'),flag(Math.round(S.mvLA*10)/10,-99,2)],
+   ['Mitral mean gradient, PCWP–LV',`${f1(S.mvPCWP)} mmHg`,'inflated by wedge delay',null,()=>vis('PCWP')&&vis('LV'),''],
+   ['Mitral valve area (Gorlin, LA)',mva?`${f2(mva)} cm²`:'no significant gradient','4–6',null,()=>vis('LA')&&vis('LV'),mva&&mva<=1.0?'<span class="flag hi">VERY SEVERE</span>':mva&&mva<=1.5?'<span class="flag hi">SEVERE</span>':''],
+   ['Aortic mean gradient',`${f1(S.avMean)} mmHg`,'< 5',null,()=>vis('LV')&&vis('Ao'),flag(Math.round(S.avMean*10)/10,-99,5)],
    ['Aortic peak-to-peak',`${r0(S.avP2P)} mmHg`,'≈ 0',null,()=>vis('LV')&&vis('Ao'),''],
    ['Aortic valve area (Gorlin)',ava?`${f2(ava)} cm²`:'no significant gradient','3–4',null,()=>vis('LV')&&vis('Ao'),ava&&ava<1.0?'<span class="flag hi">SEVERE</span>':''],
    ['Qp : Qs',`${f2(qpqs)}`,'≈ 1.0',null,()=>true,flag(qpqs,0.7,1.5)]];
-  $('#dTable tbody').innerHTML=D.map(([l,v,n,_,ok,fl])=>`<tr><td>${l}</td><td class="num">${ok()?v+fl:'<span class="hidden-val">needs more data</span>'}</td><td class="ref">${n}</td></tr>`).join('');
-  $('#coSourceLbl').textContent='Using '+src+' cardiac output'+(src==='Fick'?' (inject to use thermodilution)':'');}
+  $('#dTable tbody').innerHTML=D.map(([l,v,n,_,ok,fl])=>`<tr><td>${l}</td><td class="num${l.startsWith('PH class')?' wrap':''}">${ok()?v+fl:'<span class="hidden-val">needs more data</span>'}</td><td class="ref">${n}</td></tr>`).join('')+
+   `<tr><td colspan="3" class="muted" style="font-size:12px;white-space:normal">¹ PAPi and RA : PCWP were validated as markers of RV failure (inferior MI, LVAD candidates, advanced HF). In tamponade or constriction they reflect equalised pressures, not RV failure.</td></tr>`;
+  $('#coSourceLbl').textContent='Using '+src;}
 
 /* ============================== notes / cases UI ============================== */
 function renderCases(){const el=$('#cases');el.innerHTML='';
@@ -781,9 +803,9 @@ function tdModel(noisy){const p=st.td.p,cond=tdCondition(),err=$('#tdErr').value
   const physK=p.K1*p.K2*60/1000;
   let areaTrue=Vact*(p.Tb-Tiact)*physK/p.co;
   // condition effects on what the thermistor sees
-  if(cond==='tr')areaTrue*=1.38;
+  if(cond==='tr')areaTrue*=1.04;
   if(err==='slow')areaTrue*=1.08;
-  let jitter=1;if(noisy){const sd=cond==='tr'?0.13:cond==='af'?0.09:cond==='lowco'?0.06:0.035;jitter=1+randn()*sd;}
+  let jitter=1;if(noisy){const sd=cond==='tr'?0.11:cond==='af'?0.09:cond==='lowco'?0.06:0.035;jitter=1+randn()*sd;}
   const rng=noisy?Math.random:null;
   const sh=tdShape(p.co,cond,err,rng);const scale=areaTrue*jitter/sh.a;
   const n=sh.y.length,y=new Float64Array(n);
@@ -825,14 +847,14 @@ function renderTd(){const p=st.td.p;TV.forEach(v=>{$('#tdv-'+v.k).textContent=(v
   const cond=m.cond,err=m.err;const msgs={
    normal:'Smooth curve with a quick upstroke and exponential washout. Larger volume or colder injectate makes a bigger curve (better signal), but the calculated CO stays the same.',
    lowco:'Low output: the bolus lingers, so the curve is broad and the area is large. Area is inversely proportional to flow, so a small CO comes out.',
-   tr:'Severe TR: cold blood sloshes back and forth across the tricuspid valve and warms on the way. The curve is low, prolonged and irregular, the area is too large, and CO is underestimated. Runs vary widely. Prefer Fick.',
+   tr:'Severe TR: indicator moves back and forth across the tricuspid valve, so the curve is low, prolonged and irregular and single runs scatter. Average several runs. Studies comparing with direct Fick show little systematic bias, and thermodilution is preferred over indirect Fick with an assumed VO₂.',
    shunt:'Shunt: indicator returns early through the defect and adds a second hump. The monitor counts the extra area and reports a falsely low value unless the curve is truncated.',
    af:'Atrial fibrillation: stroke volume changes beat to beat, so single runs scatter. Average more runs (5 or more).'};
   let note=msgs[cond]||msgs.normal;
   if(err==='underfill')note+=' Technique error: less indicator was given than the monitor assumes, the area is smaller and CO is overestimated.';
   if(err==='warm')note+=' Technique error: the injectate warmed before injection, so less cold went in than assumed and CO is overestimated.';
   if(err==='k2')note+=' Technique error: a constant for the wrong catheter or volume scales every result by the same factor.';
-  if(err==='slow')note+=' Technique error: a slow injection spreads the bolus, distorts the curve and loses some indicator. Inject smoothly in under 4 seconds.';
+  if(err==='slow')note+=' Technique error: a slow injection spreads the bolus into a broad, low curve with a larger area, so CO is underestimated and runs are less reproducible. Inject smoothly in under 4 seconds.';
   if(p.Tb-p.Ti<15)note+=' With room-temperature injectate the signal is small, so noise and baseline drift matter more.';
   $('#tdNote').textContent=note;
   renderTables();}

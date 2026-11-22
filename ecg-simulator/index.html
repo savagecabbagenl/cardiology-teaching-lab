@@ -285,18 +285,21 @@ function finalize(comps, tech){
 const STEMI_STAGES = [['hyper','Hyperacute (first minutes)'], ['acute','Acute (ST elevation)'], ['evolved','Evolved (Q waves, T inversion)']];
 function stemi(name, d, features, extra){
   return Object.assign({ group: 'Acute coronary syndromes', name, sev: { label: 'Peak ST deviation (12-lead)', min: 1, max: 6, step: 0.5, def: 3, unit: 'mm' },
-    stages: STEMI_STAGES, stDir: dir(...d), features,
-    apply(c){ stemiApply(c, this.stDir, c.sev, c.stage); } }, extra || {});
+    stages: STEMI_STAGES, stDir: dir(...d), features: features.concat([STEMI_CRIT]),
+    apply(c){ stemiApply(c, this.stDir, c.sev, c.stage, this.antT || 0); } }, extra || {});
 }
-function stemiApply(c, d, mm, stage){
+const STEMI_CRIT = 'STEMI criteria (ESC 2023 / 4th UDMI): new ST elevation at the J point in ≥ 2 contiguous leads, ≥ 1 mm in most leads; in V2–V3 ≥ 2 mm in men ≥ 40, ≥ 2.5 mm in men < 40, ≥ 1.5 mm in women.';
+function stemiApply(c, d, mm, stage, antT){
   const a = (mm * 0.1) / c.maxAbs(d, ['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6']);
   if (stage === 'hyper'){
     c.add(PLAT(c.D - 0.004, c.tPeak - 0.02, 0.006, 0.05, a*0.35, d, 'st'));
     c.add(G(c.tPeak - 0.015, 0.075, 0.055, a*1.6, d, 't'));
+    if (antT) c.add(G(c.tPeak + 0.01, 0.06, 0.05, a*antT*1.4, dir(0.05,0.05,1), 't'));
   } else if (stage === 'acute'){
     c.add(PLAT(c.D - 0.004, c.tPeak + 0.01, 0.005, 0.045, a, d, 'st'));
     c.add(G(c.tPeak - 0.01, 0.07, 0.05, a*0.7, d, 't'));
     c.add(G(0.45*c.D, 0.12*c.D, 0.12*c.D, 0.25, neg(d), 'q')); // loss of R wave in the territory
+    if (antT) c.add(G(c.tPeak + 0.01, 0.06, 0.05, a*antT, dir(0.05,0.05,1), 't')); // upright terminal T in V1–V3 (mirror of posterior T)
   } else {
     c.add(G(0.02, 0.011, 0.012, 0.75, neg(d), 'q')); // pathological Q (>= 40 ms)
     c.add(G(0.45*c.D, 0.12*c.D, 0.12*c.D, 0.35, neg(d), 'q'));
@@ -324,24 +327,24 @@ const PATHOLOGIES = {
   stemi_lat: stemi('High lateral STEMI (D1 / circumflex)', [0.82,-0.55,0.1], [
     'ST elevation in I and aVL, ± V5–V6; can be subtle (small voltages in aVL).',
     'Reciprocal ST depression in III and aVF is often more obvious than the elevation.',
-    '"South African flag" sign: STE in I, aVL and V2 with depression in III.']),
-  stemi_inf: stemi('Inferior STEMI (RCA)', [-0.32,0.95,-0.05], [
+    'Shown here with lateral precordial (V5–V6) involvement. Isolated first-diagonal occlusion can instead give the "South African flag": STE in I, aVL and V2 with depression in III (not drawn here).']),
+  stemi_inf: stemi('Inferior STEMI (RCA)', [-0.25,0.95,-0.35], [
     'ST elevation II, III, aVF with STE III > II (vector points rightward, typical of RCA).',
     'Reciprocal ST depression in aVL (and I): aVL depression is a sensitive early sign.',
     'Look for bradycardia and AV block (AV nodal artery usually from RCA).',
     'Check V1 and V4R for RV involvement; check V1–V3 depression for posterior extension.']),
-  stemi_infrv: stemi('Inferior + RV STEMI (proximal RCA)', [-0.55,0.78,0.32], [
-    'Inferior ST elevation with STE III > II and ST elevation in V1 (± V2).',
-    'ST elevation ≥ 1 mm in V4R confirms RV infarction (switch on the right-sided leads).',
+  stemi_infrv: stemi('Inferior + RV STEMI (proximal RCA)', [-0.72,0.65,0.12], [
+    'Inferior ST elevation with STE III > II and ST elevation in V1 that is greater than in V2 and fades by V3 (V2 > V1 would point to the LAD instead).',
+    'ST elevation ≥ 0.5 mm in V3R/V4R (≥ 1 mm in men < 30) indicates RV involvement (switch on the right-sided leads). It is sensitive early but can resolve within hours.',
     'Clinical: preload-dependent; avoid nitrates; hypotension with clear lungs.'], { extraLeads: true }),
   stemi_post: stemi('Posterior STEMI (circumflex)', [0.12,0.1,-1], [
-    'Horizontal ST depression V1–V3 with upright T waves: the mirror image of posterior STE.',
+    'Horizontal ST depression V1–V3 with an upright terminal T wave: the mirror image of posterior STE. The upright T helps separate it from subendocardial ischaemia.',
     'Tall, broad R waves in V1–V2 (R/S > 1) when evolved: the mirror image of posterior Q waves.',
-    'ST elevation ≥ 0.5 mm in V7–V9 confirms it (switch on the posterior leads).'], { extraLeads: true }),
+    'ST elevation ≥ 0.5 mm in V7–V9 (≥ 1 mm in men < 40) confirms it (switch on the posterior leads).'], { extraLeads: true, antT: 1.1 }),
   stemi_infpost: stemi('Inferoposterior STEMI', [0.0,0.78,-0.62], [
     'ST elevation II, III, aVF with ST depression V1–V3.',
     'Usually dominant circumflex or RCA with posterolateral branch.',
-    'Posterior leads V7–V9 show ST elevation.'], { extraLeads: true }),
+    'Posterior leads V7–V9 show ST elevation.'], { extraLeads: true, antT: 1.1 }),
   lmca: { group: 'Acute coronary syndromes', name: 'Left main / multivessel ischaemia', sev: { label: 'Max ST depression', min: 1, max: 5, step: 0.5, def: 2.5, unit: 'mm' },
     features: [
       'Widespread horizontal or downsloping ST depression, maximal V4–V6, I and II.',
@@ -404,9 +407,10 @@ const PATHOLOGIES = {
   hyperca: { group: 'Electrolytes', name: 'Hypercalcaemia', sev: { label: 'Corrected Ca²⁺', min: 2.7, max: 4.0, step: 0.05, def: 3.4, unit: 'mmol/L' },
     features: [
       'Short QT interval, mainly from a shortened ST segment (T wave starts at the end of the QRS).',
-      'Severe: J waves (Osborn-like), bradyarrhythmias and AV block.',
+      'Severe (here above 3.4 mmol/L): small J waves (Osborn-like) and PR prolongation; bradyarrhythmias and AV block can follow.',
       'QTc below ~ 360 ms should prompt a calcium level.'],
-    eff(p, ca){ return { qtcAdd: -(ca-2.5)*0.065 }; } },
+    eff(p, ca){ return { qtcAdd: -(ca-2.5)*0.065, prAdd: ca > 3.4 ? (ca-3.4)*0.06 : 0 }; },
+    apply(c){ if (c.sev > 3.4) c.add(G(c.D + 0.018, 0.012, 0.025, (c.sev-3.4)*0.18, dir(0.5,0.75,0.45), 'j')); } },
   hypoca: { group: 'Electrolytes', name: 'Hypocalcaemia', sev: { label: 'Corrected Ca²⁺', min: 1.3, max: 2.1, step: 0.05, def: 1.7, unit: 'mmol/L' },
     features: [
       'QT prolongation from lengthening of the ST segment; the T wave itself is of normal width.',
@@ -424,7 +428,7 @@ const PATHOLOGIES = {
       'QTc prolongation; Brugada-like pattern may appear in V1–V2.',
       'Treat with sodium bicarbonate and watch the QRS narrow.'],
     eff(p, s){ return { qrsAdd: [0, 0.02, 0.05, 0.085][s], qtcAdd: [0, 0.03, 0.05, 0.07][s] }; },
-    apply(c){ const s = c.sev; c.add(G(c.D*0.84, c.D*0.12, c.D*0.12, 0.18 + 0.14*s, dir(-0.75,-0.55,0.15), 'q')); } },
+    apply(c){ const s = c.sev; c.add(G(c.D*0.84, c.D*0.12, c.D*0.12, 0.3 + 0.24*s, dir(-0.75,-0.55,0.15), 'q')); } },
   dig: { group: 'Toxicology', name: 'Digoxin effect', features: [
       'Sagging, "scooped" ST depression with a reverse-tick shape, most obvious in the lateral leads.',
       'Flattened, inverted or biphasic T waves; shortened QT.',
@@ -465,7 +469,8 @@ const PATHOLOGIES = {
       'Axis usually normal; with left axis deviation think bifascicular block.'] },
   lbbb: { group: 'Conduction', name: 'Left bundle branch block', conduction: 'lbbb', preset: { qrs: 150, axis: 10 }, features: [
       'QRS ≥ 120 ms; dominant S (QS or rS) in V1.',
-      'Broad, notched or monophasic R in I, aVL, V5–V6, with no septal q waves.',
+      'Broad, notched or monophasic R in I, aVL, V5–V6, with no q waves in I, V5 and V6 (a small q in aVL is allowed).',
+      'Strict (Strauss) criteria, used for CRT selection: QRS ≥ 140 ms (men) or ≥ 130 ms (women) with mid-QRS notching in ≥ 2 of I, aVL, V1, V2, V5, V6.',
       'Appropriate discordance: ST and T deviate opposite to the main QRS deflection.',
       'Obscures ischaemia; use Sgarbossa (Smith-modified) criteria for suspected MI.'] },
   lafb: { group: 'Conduction', name: 'Left anterior fascicular block', conduction: 'lafb', preset: { axis: -55, qrs: 100 }, features: [
@@ -478,8 +483,8 @@ const PATHOLOGIES = {
       'Rare in isolation; usually accompanies RBBB.'] },
   bifasc: { group: 'Conduction', name: 'Bifascicular block (RBBB + LAFB)', conduction: 'rbbb', initial: 'lafb', preset: { axis: -60, qrs: 140 }, features: [
       'RBBB morphology in V1 plus left axis deviation from LAFB.',
-      'With a long PR this is often called "trifascicular" in practice.',
-      'Risk of progression to complete heart block, especially with syncope.'] },
+      'With a long PR this is often called "trifascicular", a misnomer: the PR delay is usually in the AV node.',
+      'Risk of progression to complete heart block. With unexplained syncope, an EP study or prolonged monitoring is recommended (ESC 2021).'] },
   wpw: { group: 'Conduction', name: 'WPW pre-excitation', ap: true, stages: [['ll','Left lateral pathway (type A)'], ['ps','Posteroseptal pathway'], ['rf','Right free-wall pathway (type B)']],
     features: [
       'Short PR (< 120 ms) with a slurred QRS upstroke (delta wave) and QRS > 110 ms.',
@@ -489,12 +494,12 @@ const PATHOLOGIES = {
     deltaDir(stage){ return stage === 'ps' ? dir(0.55,-0.75,0.15) : stage === 'rf' ? dir(0.8,0.15,-0.55) : dir(-0.5,0.45,0.72); } },
 
   lvh: { group: 'Hypertrophy', name: 'LVH with strain', preset: { qrs: 105 }, features: [
-      'Increased voltage: S in V1 + R in V5 or V6 > 35 mm (Sokolow–Lyon), R in aVL > 11 mm.',
+      'Increased voltage: S in V1 + R in V5 or V6 ≥ 35 mm (Sokolow–Lyon); alternatives include R in aVL ≥ 11 mm and Cornell (R aVL + S V3 > 28 mm men, > 20 mm women).',
       'Strain pattern: asymmetric T inversion and downsloping ST depression in I, aVL, V5–V6.',
       'Often left atrial enlargement (broad, notched P; deep terminal negative P in V1).',
       'Slight QRS widening and left axis shift.'],
     pmod(c){ c.lae = true; },
-    apply(c){ const v = dir(0.6,0.35,-0.72); c.add(G(0.52*c.D, 0.12*c.D, 0.12*c.D, 1.25, v, 'q'));
+    apply(c){ const v = dir(0.6,0.35,-0.72); c.add(G(0.52*c.D, 0.12*c.D, 0.12*c.D, 1.6, v, 'q'));
       c.add(PLAT(c.D + 0.01, c.tPeak, 0.015, 0.04, 0.09, neg(v), 'st')); c.scale('t', 0.3); c.add(G(c.tPeak, 0.07, 0.035, 0.35, neg(v), 't')); } },
   rvh: { group: 'Hypertrophy', name: 'Right ventricular hypertrophy', preset: { axis: 115 }, features: [
       'Right axis deviation (≥ +110°).',
@@ -533,16 +538,17 @@ const PATHOLOGIES = {
       if (c.stage === '2'){ c.add(PLAT(c.D - 0.006, c.D + 0.012, 0.004, 0.02, 1, { V1: 0.12, V2: 0.22 }, 'st')); c.add(PLAT(c.D + 0.01, c.tPeak, 0.02, 0.05, 1, { V1: 0.08, V2: 0.1 }, 'st')); }
       else { c.add(PLAT(c.D - 0.008, c.D + 0.025, 0.004, 0.05, 1, { V1: 0.62, V2: 0.58, V3: 0.08 }, 'st')); c.add(G(c.tPeak + 0.01, 0.05, 0.05, 1, { V1: -0.22, V2: -0.62 }, 't')); }
     } },
-  ber: { group: 'Other', name: 'Benign early repolarisation', preset: { rate: 60 }, features: [
-      'Mild concave ST elevation, mostly V2–V5, with a notched or slurred J point (fish-hook) in V4.',
+  ber: { group: 'Other', name: 'Early repolarisation / normal-variant ST elevation', preset: { rate: 60 }, features: [
+      'Mild concave ST elevation, mostly V2–V5, with a notched or slurred J point (fish-hook) in V4. "Benign early repolarisation" is an outdated term.',
+      'Consensus (2015): the early repolarisation pattern is J-point notching or slurring ≥ 1 mm in ≥ 2 contiguous inferior or lateral leads; concave precordial STE alone is a normal variant ("male pattern").',
       'Prominent, slightly asymmetric T waves concordant with the QRS.',
       'No reciprocal depression (except aVR), no PR depression, stable over time.',
       'Common in young, fit, male patients with slower heart rates.'],
     apply(c){ const d = dir(0.45,0.4,0.8); c.add(PLAT(c.D + 0.004, c.tPeak + 0.02, 0.012, 0.045, 0.1, d, 'st'));
       c.add(G(c.D + 0.006, 0.006, 0.012, 0.11, d, 'j')); c.scale('t', 1.3); } },
   lqts: { group: 'Other', name: 'Long QT syndrome', preset: { qtc: 540 }, features: [
-      'QTc > 470 ms (men) or > 480 ms (women); > 500 ms carries high torsades risk.',
-      'Broad-based or notched T waves (LQT2 pattern shown), T-wave alternans in high-risk states.',
+      'Diagnosis (ESC 2022): QTc ≥ 480 ms on repeated ECGs, or an LQTS risk score > 3; QTc ≥ 460 ms suffices with unexplained syncope. QTc > 500 ms carries high torsades risk.',
+      'T-wave clues to genotype: broad-based T (LQT1), low-amplitude notched T (LQT2, the pattern shown), long isoelectric ST with late narrow T (LQT3). T-wave alternans in high-risk states.',
       'Causes: congenital channelopathy or acquired (drugs, hypoK, hypoMg, bradycardia).',
       'Torsades de pointes is the associated arrhythmia; try that rhythm.'],
     apply(c){ c.scale('t', 0.55); c.add(G(c.tPeak + 0.045, 0.05, 0.05, 0.16, c.Tdir, 't')); } },
@@ -612,25 +618,26 @@ const RHYTHMS = {
   avb1: { group: 'AV block', name: '1st-degree AV block', atrial: 'sinus', preset: { rate: 72, pr: 290 }, features: [
     'PR interval > 200 ms, constant, with every P conducted.',
     'Delay is usually in the AV node; often benign.',
-    'Ladder: steeper slope in the AV tier.'] },
+    'Ladder: a longer, more oblique (flatter) line across the AV tier.'] },
   mobitz1: { group: 'AV block', name: '2nd-degree type I (Wenckebach)', atrial: 'sinus', preset: { rate: 75, pr: 160, avnERP: 530, avnDec: 90, rsa: 0 }, features: [
     'Progressive PR prolongation until a P wave is not conducted, then the cycle repeats.',
     'The largest PR increment is usually on the second beat, so R–R intervals shorten before the pause ("group beating").',
     'The pause is less than two P–P intervals; the PR after the pause is the shortest.',
     'Here it emerges from AV-node physiology: a long nodal refractory period with decremental conduction. Shorten the AV-node ERP and it resolves.'] },
-  mobitz2: { group: 'AV block', name: '2nd-degree type II (Mobitz II)', atrial: 'sinus', his: 'mobitz', preset: { rate: 75, ratio: 4 }, features: [
+  mobitz2: { group: 'AV block', name: '2nd-degree type II (Mobitz II)', atrial: 'sinus', his: 'mobitz', preset: { rate: 90, ratio: 4 }, features: [
     'Constant PR in conducted beats, then a sudden non-conducted P wave.',
     'Block is infranodal (His–Purkinje), so the QRS is often wide (bundle branch block).',
     'Risk of progression to complete heart block; needs pacing.',
     'Ladder: the block sits low in the AV tier, below the node.'] },
-  avb21: { group: 'AV block', name: '2:1 AV block', atrial: 'sinus', his: 'fixed', preset: { rate: 80, ratio: 2 }, features: [
+  avb21: { group: 'AV block', name: '2:1 AV block', atrial: 'sinus', his: 'fixed', preset: { rate: 90, ratio: 2 }, features: [
     'Every other P wave is conducted; constant PR in conducted beats.',
     'Cannot be classified as type I or II from the strip alone: a wide QRS favours infranodal block, a long PR with narrow QRS favours nodal.',
     'Non-conducted P waves may hide in the preceding T wave.'] },
-  avbhg: { group: 'AV block', name: 'High-grade AV block (3:1)', atrial: 'sinus', his: 'fixed', preset: { rate: 100, ratio: 3 }, features: [
+  avbhg: { group: 'AV block', name: 'High-grade AV block (3:1)', atrial: 'sinus', his: 'fixed', preset: { rate: 80, ratio: 3 }, features: [
     'Two or more consecutive non-conducted P waves with some conducted beats (constant PR).',
     'Distinguished from complete heart block by consistent PR in conducted beats.',
-    'Usually infranodal; high risk, needs pacing.'] },
+    'Often infranodal, but can be nodal (inferior MI, drugs, high vagal tone). Exclude reversible causes; persistent advanced AV block needs pacing.',
+    'Here a junctional escape (~40 /min) fills the longest pauses, as often happens in practice.'] },
   chb: { group: 'AV block', name: '3rd-degree (complete) heart block', atrial: 'sinus', his: 'complete', auto: 'escape', preset: { rate: 85, vrate: 40, escape: 'junctional' }, features: [
     'Complete AV dissociation: P waves and QRS complexes march out independently.',
     'Atrial rate faster than ventricular rate; PR varies randomly.',
@@ -648,7 +655,8 @@ const RHYTHMS = {
   tdp: { group: 'Ventricular', name: 'Torsades de pointes', atrial: 'none', auto: 'tdp', preset: { vrate: 230, qtc: 560 }, features: [
     'Polymorphic VT with QRS amplitude and axis twisting around the baseline.',
     'Occurs on a background of a long QT interval, often triggered by a short–long–short sequence.',
-    'Treat with IV magnesium; overdrive pacing or isoprenaline for recurrent episodes.'] },
+    'Treat with IV magnesium, correct K⁺ and Mg²⁺ and stop QT-prolonging drugs. Defibrillate if sustained.',
+    'For recurrent pause-dependent (acquired) torsades: temporary overdrive pacing or isoprenaline. Isoprenaline is contraindicated in congenital long QT (especially LQT1), where beta-blockade is the treatment.'] },
   vf: { group: 'Ventricular', name: 'Ventricular fibrillation', atrial: 'none', auto: 'vf', preset: {}, features: [
     'Chaotic, irregular deflections of varying amplitude with no identifiable QRS, ST or T.',
     'Coarse VF becomes fine VF with time.',
@@ -667,7 +675,7 @@ const PACE_PRESETS = {
     'Needs intact AV conduction: try it over Wenckebach or complete heart block to see why AAI alone is risky.'] },
   ddd: { name: 'DDD, dual chamber', set: { pmMode: 'DDD', pmLR: 60, pmSAV: 150, pmPAV: 200 }, suggest: { rhythm: 'chb', label: 'Complete heart block' }, features: [
     'Tracks sensed P waves (AS–VP) up to the upper rate; below the lower rate paces both chambers in sequence (AP–VP).',
-    'With intact conduction and a PR longer than the sensed AV delay you get fusion; lengthen the SAV to let native conduction through.',
+    'With intact conduction and a PR longer than the sensed AV delay the ventricle is paced; fusion or pseudofusion appears when native conduction arrives close to the paced beat. Lengthen the SAV to let native conduction through.',
     'Over AF or flutter the device mode-switches to non-tracking pacing.'] },
   ddd_ur: { name: 'DDD upper-rate behaviour', set: { pmMode: 'DDD', pmLR: 60, pmUR: 120, pmSAV: 150, pmPVARP: 250 }, suggest: { rhythm: 'chb', rate: 135, label: 'Complete heart block, sinus 135' }, features: [
     'Sinus rate above the upper tracking rate: V pacing is held until the upper-rate interval has elapsed, so AS–VP lengthens.',
@@ -688,7 +696,8 @@ const PACE_PRESETS = {
   magnet: { name: 'Magnet applied (DOO)', set: { pmMode: 'DOO', pmLR: 85, pmPAV: 120 }, suggest: { rhythm: 'sinus', rate: 94, label: 'Sinus rhythm at 94' }, features: [
     'Magnet forces asynchronous pacing (DOO/VOO) at the magnet rate, ignoring intrinsic activity.',
     'Competition with a faster native rhythm: spikes land at fixed intervals, some on T waves or in native QRS (functional non-capture).',
-    'Magnet rate varies by manufacturer and falls as the battery depletes.'] },
+    'Magnet rate varies by manufacturer and falls as the battery depletes.',
+    'On an ICD a magnet suspends tachycardia therapies but does not switch to asynchronous pacing.'] },
 };
 
 // default parameter set (UI units: ms, bpm, degrees, %)
@@ -742,9 +751,9 @@ function buildP(kind, e, cl){
   let Pd = c.Pd;
   if (c.lae){ Pd = Math.max(Pd, 0.13);
     comps.push(G(Pd*0.28, Pd*0.13, Pd*0.15, 0.11*amp, dir(0.25,0.9,0.45), 'p'));
-    comps.push(G(Pd*0.68, Pd*0.15, Pd*0.15, 0.12*amp, dir(0.6,0.5,-0.75), 'p'));
+    comps.push(G(Pd*0.68, Pd*0.15, Pd*0.15, 0.16*amp, dir(0.6,0.5,-0.75), 'p'));
   } else {
-    comps.push(G(Pd*0.36, Pd*0.17, Pd*0.17, (c.rae ? 0.26 : 0.11)*amp, dir(0.25,0.9,0.45), 'p'));
+    comps.push(G(Pd*0.36, Pd*0.17, Pd*0.17, (c.rae ? 0.31 : 0.11)*amp, dir(0.25,0.9,0.45), 'p'));
     comps.push(G(Pd*0.62, Pd*0.18, Pd*0.18, 0.09*amp, dir(0.75,0.5,-0.5), 'p'));
   }
   return finalize(comps, e.tech);
@@ -1027,7 +1036,7 @@ class Sim {
   }
   autoCycle(){
     const a = this.r.auto;
-    if (!a) return 60/25; // backup junctional escape at 25/min
+    if (!a) return 60/40; // backup junctional escape at 40/min
     if (a === 'vf') return 0;
     return 60 / this.e.vrate;
   }
@@ -1081,11 +1090,12 @@ class Sim {
     const tin = tA + (kind === 'af' || kind === 'flutter' ? 0.0 : kind === 'apace' ? 0.06 : 0.03);
     let erp = e.avnERP, A = e.avnA, tau = e.avnTau;
     if (mode === 'sinus'){ const f = clamp((60/e.rate)/0.8, 0.45, 1.15); erp *= f; A *= f; tau *= f; } // autonomic coupling with sinus rate
+    if (kind === 'af') erp *= 0.62 + 0.76*this.rand(); // AF: wavelets of varying strength and timing meet a node in varying recovery, so R–R is irregularly irregular
     const R = tin - this.lastNodeExit;
     let nodeOK = R >= erp, tV = Infinity;
     if (!nodeOK){
       a.status = 'node';
-      if ((kind === 'af') && R > erp*0.55) this.lastNodeExit += (tin - erp*0.55 - this.lastNodeExit)*this.concealK; // partial concealed conduction
+      if ((kind === 'af') && R > erp*0.45 && this.rand() < 0.7) this.lastNodeExit += (tin - erp*0.45 - this.lastNodeExit)*(0.25 + 0.6*this.rand()); // variable concealed conduction
     } else {
       const AH = Math.max(0.02, e.pr - 0.075) + A*Math.exp(-(R - erp)/tau);
       const exit = tin + AH; this.lastNodeExit = exit;
@@ -1718,7 +1728,7 @@ function pacingNotes(){
     lbbap: 'Left bundle area: RBBB-type paced QRS (qR in V1), short stimulus to LV activation time, QRS ≈ 110–130 ms.',
   };
   if (m !== 'AAI') out.push(SITE[P.pmSite]);
-  if ((m === 'DDD' || m === 'VDD') && (RHYTHMS[P.rhythm].atrial === 'af' || RHYTHMS[P.rhythm].atrial === 'flutter')) out.push('Atrial tachyarrhythmia detected: the device has mode-switched to non-tracking ventricular pacing (shown as VVI behaviour).');
+  if ((m === 'DDD' || m === 'VDD') && (RHYTHMS[P.rhythm].atrial === 'af' || RHYTHMS[P.rhythm].atrial === 'flutter')) out.push('Atrial tachyarrhythmia detected: the device has mode-switched to a non-tracking mode (usually DDI(R) or VDI(R) in real devices; shown here as VVI behaviour).');
   if (P.pmVCap !== 'ok' || P.pmACap !== 'ok') out.push('Loss of capture: a spike with no following P or QRS (red marker). Causes include lead dislodgement, rising threshold, or low output.');
   if (P.pmVSense === 'under') out.push('Undersensing: the device ignores intrinsic QRS complexes and paces anyway; spikes appear inside or after native beats, risking R-on-T.');
   if (P.pmVSense === 'over') out.push('Oversensing: noise or T waves are mistaken for R waves, inhibiting pacing and causing pauses (red VS markers).');

@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PV Loop Simulator</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#1b2430; --muted:#5d6b7c; --line:#dde2e8; --grid:#eceff3;
+  --accent:#b4232f; --accent-soft:#fbe9ea; --chip:#f0f2f5;
+  --lv:#c62a37; --ao:#2563eb; --la:#d97706; --pa:#0f766e; --ref:#8b96a5; --snap:#7c3aed;
+  --espvr:#047857; --edpvr:#0e7490; --ea:#6b7280; --up:#b45309; --down:#1d4ed8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1318; --panel:#171c23; --ink:#e6eaf0; --muted:#9aa7b6; --line:#2a323d; --grid:#222a33;
+    --accent:#f06a74; --accent-soft:#3a1d22; --chip:#212833;
+    --lv:#ff6b76; --ao:#6ea0ff; --la:#f6ad3c; --pa:#2dd4bf; --ref:#7b8796; --snap:#b794f6;
+    --espvr:#34d399; --edpvr:#38bdf8; --ea:#9ca3af; --up:#fbbf24; --down:#93c5fd;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1318; --panel:#171c23; --ink:#e6eaf0; --muted:#9aa7b6; --line:#2a323d; --grid:#222a33;
+  --accent:#f06a74; --accent-soft:#3a1d22; --chip:#212833;
+  --lv:#ff6b76; --ao:#6ea0ff; --la:#f6ad3c; --pa:#2dd4bf; --ref:#7b8796; --snap:#b794f6;
+  --espvr:#34d399; --edpvr:#38bdf8; --ea:#9ca3af; --up:#fbbf24; --down:#93c5fd;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{padding:14px 20px 10px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline}
+header h1{font-size:19px;margin:0;font-weight:650;letter-spacing:-.01em}
+header .sub{color:var(--muted);font-size:13px}
+header .spacer{flex:1}
+.wrap{display:grid;grid-template-columns:330px minmax(0,1fr) 330px;gap:14px;padding:14px;max-width:1700px;margin:0 auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px;font-weight:650}
+.panel + .panel{margin-top:12px}
+aside .panel{margin-bottom:12px}
+.presets .grp{font-size:11px;color:var(--muted);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.05em}
+.presets .grp:first-of-type{margin-top:0}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+button{font:inherit;color:inherit}
+.chip{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:4px 10px;font-size:12.5px;cursor:pointer;line-height:1.3}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.slider{margin:9px 0 11px}
+.slider .top{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.slider .val{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600;white-space:nowrap}
+.slider .val small{color:var(--muted);font-weight:400}
+.slider .hint{font-size:11.5px;color:var(--muted)}
+.slider.changed .top label{color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:4px 0 0}
+.sgrp{font-size:12px;font-weight:650;margin:14px 0 2px;padding-top:10px;border-top:1px solid var(--line)}
+.sgrp:first-child{border-top:0;padding-top:0;margin-top:0}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--chip);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:12.5px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+label.ck{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;margin-right:10px;cursor:pointer;white-space:nowrap}
+.chart{position:relative;width:100%}
+.chart canvas{display:block;width:100%;height:100%}
+#pvWrap{height:470px}
+.trace{height:165px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin:6px 2px 0}
+.legend i{display:inline-block;width:18px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:5px}
+.legend i.dash{border-top-style:dashed}
+.legend i.dot{border-top-style:dotted}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;margin-bottom:8px}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.kpi{background:var(--chip);border-radius:8px;padding:7px 9px}
+.kpi .l{font-size:11px;color:var(--muted)}
+.kpi .v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .v small{font-size:11px;color:var(--muted);font-weight:400}
+.kpi .n{font-size:11px;color:var(--muted)}
+table.m{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.m th{font-weight:600;color:var(--muted);font-size:11px;text-align:right;padding:2px 4px}
+table.m th:first-child{text-align:left}
+table.m td{padding:3px 4px;border-top:1px solid var(--grid);text-align:right;white-space:nowrap}
+table.m td:first-child{text-align:left;white-space:normal}
+table.m td.ref{color:var(--muted)}
+table.m tr.sec td{font-weight:650;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding-top:9px;border-top:0}
+.up{color:var(--up)} .down{color:var(--down)}
+.note h3{margin:0 0 4px;font-size:16px}
+.note .tag{display:inline-block;font-size:11px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 8px;margin-bottom:6px}
+.note p{margin:6px 0}
+.note ul{margin:6px 0;padding-left:18px}
+.note li{margin:3px 0}
+.note .try{background:var(--chip);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:13px}
+.note .try b{color:var(--accent)}
+details{margin-top:8px}
+details summary{cursor:pointer;font-weight:600;font-size:13px}
+details p, details li{font-size:12.5px;color:var(--muted)}
+.foot{color:var(--muted);font-size:11.5px;text-align:center;padding:4px 16px 18px}
+.tracegrid{display:grid;grid-template-columns:1fr;gap:6px;margin-top:12px}
+.status{font-size:12px;color:var(--muted)}
+@media (max-width:1250px){
+  .wrap{grid-template-columns:310px minmax(0,1fr)}
+  .right{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .right .panel + .panel{margin-top:0}
+}
+@media (max-width:820px){
+  .wrap{grid-template-columns:1fr;padding:10px 16px}
+  .right{display:block}
+  .right .panel + .panel{margin-top:12px}
+  #pvWrap{height:360px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  main{order:-1}
+}
+</style>
+</head>
+<body>
+<style>.ctl-home{display:block;font:500 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;padding:9px max(16px,env(safe-area-inset-left,0px));background:#14202b;color:#e6edf2;text-decoration:none;letter-spacing:.01em}.ctl-home:hover,.ctl-home:focus-visible{background:#22323f;text-decoration:underline}</style>
+<a class="ctl-home" href="../">&larr; Cardiology Teaching Lab</a>
+
+<header>
+  <h1>Left Ventricular Pressure–Volume Loop Simulator</h1>
+  <span class="sub">Time-varying elastance model coupled to a closed-loop circulation</span>
+  <span class="spacer"></span>
+  <span class="row">
+    <button class="btn" id="themeBtn" title="Toggle light/dark">◐ Theme</button>
+  </span>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="panel presets">
+      <h2>Scenarios</h2>
+      <div id="presetList"></div>
+    </div>
+    <div class="panel">
+      <h2>Parameters</h2>
+      <div id="sliders"></div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="resetPreset">Reset to scenario</button>
+        <button class="btn" id="resetNormal">Reset to normal</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Quick interventions</h2>
+      <div class="row">
+        <button class="btn" data-iv="fluid">Fluid +250 mL</button>
+        <button class="btn" data-iv="bleed">Blood loss −250 mL</button>
+        <button class="btn" data-iv="vasodil">Vasodilator (SVR −30%)</button>
+        <button class="btn" data-iv="pressor">Vasopressor (SVR +30%)</button>
+        <button class="btn" data-iv="inotrope">Inotrope (Ees +40%)</button>
+        <button class="btn" data-iv="bblock">β-blocker (HR −20, Ees −15%)</button>
+      </div>
+      <p class="status" style="margin:8px 0 0">Tip: press <b>Snapshot</b> above the loop first, then apply an intervention to compare before and after.</p>
+    </div>
+  </aside>
+
+  <main>
+    <div class="panel">
+      <div class="toolbar">
+        <label class="ck"><input type="checkbox" id="ckRef" checked> Normal reference</label>
+        <label class="ck"><input type="checkbox" id="ckLines" checked> ESPVR / EDPVR</label>
+        <label class="ck"><input type="checkbox" id="ckEa"> Ea line</label>
+        <label class="ck"><input type="checkbox" id="ckEvents" checked> Valve events</label>
+        <label class="ck"><input type="checkbox" id="ckSettle" checked> Jump to steady state</label>
+        <span class="spacer" style="flex:1"></span>
+        <button class="btn" id="snapBtn">Snapshot</button>
+        <button class="btn" id="clearSnap">Clear snapshot</button>
+        <button class="btn" id="pauseBtn">Pause</button>
+        <select id="speed" class="btn" title="Animation speed">
+          <option value="0.25">¼× speed</option>
+          <option value="0.5" selected>½× speed</option>
+          <option value="1">1× speed</option>
+        </select>
+      </div>
+      <div class="chart" id="pvWrap"><canvas id="pv"></canvas></div>
+      <div class="legend">
+        <span><i style="border-color:var(--lv)"></i>Current loop</span>
+        <span id="lgRef"><i class="dash" style="border-color:var(--ref)"></i>Normal reference</span>
+        <span id="lgSnap" hidden><i class="dash" style="border-color:var(--snap)"></i>Snapshot</span>
+        <span><i class="dash" style="border-color:var(--espvr)"></i>ESPVR</span>
+        <span><i class="dash" style="border-color:var(--edpvr)"></i>EDPVR</span>
+        <span><i class="dot" style="border-color:var(--ea)"></i>Ea (arterial elastance)</span>
+      </div>
+      <div class="tracegrid">
+        <div class="chart trace"><canvas id="cP"></canvas></div>
+        <div class="legend" style="margin-top:0">
+          <span><i style="border-color:var(--lv)"></i>LV pressure</span>
+          <span><i style="border-color:var(--ao)"></i>Aortic pressure</span>
+          <span><i style="border-color:var(--la)"></i>LA pressure</span>
+        </div>
+        <div class="chart trace"><canvas id="cV"></canvas></div>
+        <div class="chart trace"><canvas id="cQ"></canvas></div>
+        <div class="legend" style="margin-top:0">
+          <span><i style="border-color:var(--ao)"></i>Aortic valve flow</span>
+          <span><i style="border-color:var(--la)"></i>Mitral valve flow</span>
+          <span>Negative flow = regurgitation</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="right">
+    <div class="panel note" id="note"></div>
+    <div class="panel">
+      <h2>Hemodynamics (steady-state beat)</h2>
+      <div class="kpis" id="kpis"></div>
+      <table class="m" id="mtable"></table>
+      <p class="status" style="margin:6px 0 0"><span class="up">↑</span>/<span class="down">↓</span> marks values more than 15% away from the normal reference.</p>
+    </div>
+    <div class="panel">
+      <h2>About the model</h2>
+      <details>
+        <summary>How the simulation works</summary>
+        <p>The left ventricle is a time-varying elastance: pressure moves between the end-diastolic curve, P = A·(e<sup>β(V−V₀)</sup>−1), and the end-systolic line, P = Ees·(V−V₀), as an activation function rises and falls each beat. Relaxation speed stretches the fall of that activation.</p>
+        <p>The LV is coupled to a left atrium with its own passive and active elastance, mitral and aortic valves, an arterial Windkessel (characteristic impedance, compliance and SVR), a systemic venous reservoir, a right-heart pump that returns venous blood to the lungs, and a pulmonary compartment. Blood volume is conserved, so congestion and low output come out of the model rather than being imposed.</p>
+        <p>Valves follow the Bernoulli orifice relation, ΔP = (Q / (50·A))² with Q in mL/s and A in cm², so stenosis is set by valve area and regurgitation by effective regurgitant orifice area (EROA).</p>
+      </details>
+      <details>
+        <summary>Limitations</summary>
+        <ul>
+          <li>It is a teaching model, not a patient-specific predictor. Numbers are plausible, not exact.</li>
+          <li>The right heart, pericardium, coronary flow and reflexes (baroreflex) are not modelled. Presets include typical compensations (heart rate, SVR, volume) set by hand.</li>
+          <li>HCM outflow obstruction is approximated as a fixed narrowing; real LVOT obstruction is dynamic.</li>
+          <li>Atrial fibrillation is shown as loss of atrial kick at a faster rate; beat-to-beat irregularity is not simulated.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Abbreviations</summary>
+        <p>EDV/ESV end-diastolic/end-systolic volume · SV stroke volume · EF ejection fraction · CO cardiac output · ESPVR/EDPVR end-systolic/end-diastolic pressure–volume relation · Ees end-systolic elastance · Ea effective arterial elastance (ESP/SV) · PVA pressure–volume area · SVR systemic vascular resistance (1 mmHg·s/mL ≈ 1333 dyn·s·cm⁻⁵) · EROA effective regurgitant orifice area · RF regurgitant fraction.</p>
+      </details>
+    </div>
+  </div>
+</div>
+<div class="foot">For education only. Not for clinical decision-making.</div>
+
+<script>
+// ===== PV loop simulation core =====
+const PVSim = (() => {
+  const DT = 5e-5;
+  const FIXED = { Csv: 50, Cp: 8, Rp: 0.075, Grh: 18, Rmv: 0.003, Zc: 0.006, V0la: 15 };
+
+  function actV(tb, T, relax) {
+    const tp = 0.34 * Math.sqrt(T);
+    let tr = 0.5 * tp * relax;
+    tr = Math.min(tr, T - tp - 0.03);
+    if (tb < tp) return 0.5 * (1 - Math.cos(Math.PI * tb / tp));
+    if (tb < tp + tr) return 0.5 * (1 + Math.cos(Math.PI * (tb - tp) / tr));
+    return 0;
+  }
+  function actA(tb, T) {
+    const pr = Math.min(0.16, 0.2 * T), da = Math.min(0.18, 0.3 * T);
+    let x = tb - (T - pr);
+    if (x < 0) x += T;
+    if (x > da) return 0;
+    return 0.5 * (1 - Math.cos(2 * Math.PI * x / da));
+  }
+  // flow through orifice of area A (cm2) with series linear R, for dP >= 0
+  function orifice(dP, A, R) {
+    if (A <= 0 || dP <= 0) return 0;
+    const b = 1 / (2500 * A * A);
+    return 2 * dP / (R + Math.sqrt(R * R + 4 * b * dP)); // stable form
+  }
+  function lvP(V, e, p) {
+    const x = Math.min(p.k * (V - p.V0), 12);
+    return e * p.Ees * (V - p.V0) + (1 - e) * p.A * (Math.exp(x) - 1);
+  }
+
+  function initState(p) {
+    const s = { t: 0, tb: 0, Vlv: p.V0 + 100, Vla: 55, Va: p.Ca * 90, Vp: FIXED.Cp * 12 };
+    s.Vsv = Math.max(10, p.Vol - (s.Vlv - p.V0) - (s.Vla - FIXED.V0la) - s.Va - s.Vp);
+    return s;
+  }
+  function totalStressed(s, p) {
+    return (s.Vlv - p.V0) + (s.Vla - FIXED.V0la) + s.Va + s.Vp + s.Vsv;
+  }
+
+  function newBeat() {
+    return { t: [], Plv: [], Vlv: [], Pao: [], Pla: [], Pp: [], Qav: [], Qmv: [], e: [],
+      avF: 0, avB: 0, mvF: 0, mvB: 0, sumPao: 0, sumPla: 0, sumPp: 0, sumPsv: 0, n: 0,
+      avGradSum: 0, avGradN: 0, avGradMax: 0, mvGradSum: 0, mvGradN: 0, dpdtMax: 0 };
+  }
+
+  // advance simulation by duration seconds; calls onBeat(beat) at each completed beat
+  function run(s, p, duration, onBeat) {
+    const F = FIXED, T = 60 / p.HR;
+    const nsteps = Math.round(duration / DT);
+    if (!s.beat) s.beat = newBeat();
+    let b = s.beat;
+    let lastPlv = s.lastPlv ?? 0;
+    for (let i = 0; i < nsteps; i++) {
+      const ev = actV(s.tb, T, p.relax), ea = actA(s.tb, T);
+      const Plv = lvP(s.Vlv, ev, p);
+      const Pla = (p.Ela + ea * p.Eaa) * (s.Vla - F.V0la);
+      const Pao = s.Va / p.Ca, Psv = s.Vsv / F.Csv, Pp = s.Vp / F.Cp;
+      const Qrh = F.Grh * Math.max(Psv, 0);
+      const Qp = (Pp - Pla) / F.Rp;
+      const dm = Pla - Plv, da = Plv - Pao;
+      const Qmv = dm >= 0 ? orifice(dm, p.MVA, F.Rmv) : -orifice(-dm, p.MRA, F.Rmv);
+      const Qav = da >= 0 ? orifice(da, p.AVA, F.Zc) : -orifice(-da, p.ARA, F.Zc);
+      const Qs = (Pao - Psv) / p.SVR;
+      // record
+      if (b.n % 20 === 0) {
+        b.t.push(s.tb); b.Plv.push(Plv); b.Vlv.push(s.Vlv); b.Pao.push(Pao); b.Pla.push(Pla);
+        b.Pp.push(Pp); b.Qav.push(Qav); b.Qmv.push(Qmv); b.e.push(ev);
+      }
+      b.n++;
+      b.sumPao += Pao; b.sumPla += Pla; b.sumPp += Pp; b.sumPsv += Psv;
+      if (Qav > 0) { const g = (Qav / (50 * p.AVA)) ** 2; b.avF += Qav * DT; b.avGradSum += g; b.avGradN++; if (g > b.avGradMax) b.avGradMax = g; }
+      else b.avB -= Qav * DT;
+      if (Qmv > 0) { b.mvF += Qmv * DT; b.mvGradSum += (Qmv / (50 * p.MVA)) ** 2; b.mvGradN++; }
+      else b.mvB -= Qmv * DT;
+      const dpdt = (Plv - lastPlv) / DT; if (b.n > 2 && dpdt > b.dpdtMax) b.dpdtMax = dpdt;
+      lastPlv = Plv;
+      // integrate
+      s.Vlv += DT * (Qmv - Qav);
+      s.Vla += DT * (Qp - Qmv);
+      s.Va += DT * (Qav - Qs);
+      s.Vsv += DT * (Qs - Qrh);
+      s.Vp += DT * (Qrh - Qp);
+      s.t += DT; s.tb += DT;
+      if (s.tb >= T) {
+        s.tb -= T;
+        b.T = T;
+        if (onBeat) onBeat(b);
+        s.lastBeat = b;
+        b = newBeat();
+      }
+    }
+    s.beat = b; s.lastPlv = lastPlv;
+    s.cur = { Plv: lastPlv, Vlv: s.Vlv };
+    return s;
+  }
+
+  function metrics(b, p) {
+    const n = b.Vlv.length;
+    let iMax = 0, iMin = 0;
+    for (let i = 0; i < n; i++) { if (b.Vlv[i] > b.Vlv[iMax]) iMax = i; if (b.Vlv[i] < b.Vlv[iMin]) iMin = i; }
+    const EDV = b.Vlv[iMax], ESV = b.Vlv[iMin], SVt = EDV - ESV;
+    // ESP: max of P/(V-V0) (end-systolic point on ESPVR)
+    let iEs = 0;
+    let maxRatio = -1e9; for (let i = 0; i < n; i++) { const d = b.Vlv[i] - p.V0; if (d > 1) { const r = b.Plv[i] / d; if (r > maxRatio) { maxRatio = r; iEs = i; } } }
+    const ESP = b.Plv[iEs];
+    let sw = 0; for (let i = 0; i < n; i++) { const j = (i + 1) % n; sw += b.Vlv[i] * b.Plv[j] - b.Vlv[j] * b.Plv[i]; }
+    sw = Math.abs(sw) / 2;
+    let paoMax = -1e9, paoMin = 1e9, lvMax = -1e9, laMax = -1e9;
+    for (let i = 0; i < n; i++) { paoMax = Math.max(paoMax, b.Pao[i]); paoMin = Math.min(paoMin, b.Pao[i]); lvMax = Math.max(lvMax, b.Plv[i]); laMax = Math.max(laMax, b.Pla[i]); }
+    const netSV = b.avF - b.avB;
+    const RV = b.avB + b.mvB;
+    const PE = 0.5 * Math.max(ESV - p.V0, 0) * ESP;
+    const N = b.n;
+    return {
+      EDV, ESV, SVt, EF: SVt / EDV * 100, fSV: netSV, CO: netSV * p.HR / 1000,
+      RV, RF: SVt > 0 ? RV / SVt * 100 : 0, ARV: b.avB, MRV: b.mvB,
+      SW: sw, SWJ: sw * 1.333e-4, PVA: sw + PE, eff: sw / (sw + PE) * 100,
+      SBP: paoMax, DBP: paoMin, MAP: b.sumPao / N, LVSP: lvMax, LVEDP: b.Plv[0], ESP,
+      LAP: b.sumPla / N, LAmax: laMax, PAP: b.sumPp / N, CVP: b.sumPsv / N,
+      AVpk: b.avGradMax, AVmean: b.avGradN ? b.avGradSum / b.avGradN : 0,
+      MVmean: b.mvGradN ? b.mvGradSum / b.mvGradN : 0,
+      Ea: netSV > 1 ? ESP / SVt : 0, dpdt: b.dpdtMax, iEDV: iMax, iES: iEs
+    };
+  }
+
+  function steady(p, seconds = 25, s0 = null) {
+    const s = s0 || initState(p);
+    run(s, p, seconds);
+    return s;
+  }
+  return { run, metrics, steady, initState, totalStressed, lvP, FIXED, DT };
+})();
+
+</script>
+<script>
+(() => {
+'use strict';
+const NORMAL = {Ees:3.0,V0:5,A:0.4,k:0.026,relax:1,Vol:590,SVR:1.05,Ca:1.2,HR:70,AVA:3.5,ARA:0,MVA:4.5,MRA:0,Ela:0.2,Eaa:0.25};
+
+const PRESETS = [
+ {id:'normal', group:'Reference', name:'Normal', p:{},
+  tag:'Reference', summary:'A healthy adult ventricle at rest. The loop is a rounded rectangle whose four corners are the four valve events.',
+  bullets:['Bottom edge: diastolic filling along the EDPVR, mitral valve open (MVO to MVC).','Right edge: isovolumic contraction. Pressure rises with both valves shut.','Top edge: ejection once LV pressure exceeds aortic diastolic pressure (AVO to AVC).','Left edge: isovolumic relaxation. The top-left corner sits on the ESPVR.','Loop width is stroke volume; loop area is stroke work.'],
+  try:'Raise <b>preload</b>: the loop widens to the right and stroke volume rises (Frank–Starling). Raise <b>SVR</b>: the loop gets taller and narrower as ESV moves right along the ESPVR. Raise <b>Ees</b>: the ESPVR steepens and ESV falls.'},
+ {id:'acuteAR', group:'Valve disease', name:'Acute aortic regurgitation', p:{ARA:0.3,HR:105,SVR:1.25,Vol:740,k:0.03},
+  tag:'Volume overload, sudden', summary:'Sudden severe AR (endocarditis, aortic dissection, trauma) dumps regurgitant blood into a normal-sized, non-compliant ventricle.',
+  bullets:['No true isovolumic relaxation or contraction: the LV fills from the aorta as soon as its pressure falls below aortic pressure, so the left side of the loop slopes rightward.','EDV rises only modestly, but it climbs the steep part of the normal EDPVR, so LVEDP rises sharply.','The LV can approach aortic diastolic pressure by end-diastole (diastolic pressure equalization) and close the mitral valve early. LA and pulmonary pressures rise and pulmonary edema follows.','Total SV rises, but forward SV per beat falls. Cardiac output is held up mainly by tachycardia, which also shortens diastole, the time available for regurgitation.','Pulse pressure is not very wide, unlike chronic AR.'],
+  try:'Lower the <b>heart rate</b> to 60 and watch regurgitant volume and LVEDP climb. This is why β-blockers are avoided in acute AR. Then try a <b>vasodilator</b>. Definitive treatment is urgent surgery.'},
+ {id:'chronicAR', group:'Valve disease', name:'Chronic aortic regurgitation', p:{ARA:0.35,V0:55,k:0.013,A:0.5,Ees:2.5,Vol:650,HR:72,Ela:0.15},
+  tag:'Volume + pressure overload, compensated', summary:'Years of regurgitation produce eccentric hypertrophy: the LV dilates and becomes more compliant, so the EDPVR shifts rightward.',
+  bullets:['Very large EDV at a near-normal LVEDP, because the remodelled EDPVR is shifted right and flatter.','The largest total SV of any lesion, giving a wide, tall loop and high stroke work.','Wide pulse pressure: high systolic (large SV) and low diastolic (runoff back into the LV). This underlies the bounding pulses and other peripheral signs.','EF is maintained in the compensated phase. Falling EF or rising ESV marks decompensation and is an indication for surgery.'],
+  try:'Lower <b>Ees</b> to about 1.5 to simulate decompensation: ESV grows, EF falls and LVEDP rises. Then compare it with acute AR on the same axes using <b>Snapshot</b>.'},
+ {id:'acuteMR', group:'Valve disease', name:'Acute mitral regurgitation', p:{MRA:0.40,HR:100,SVR:1.25,Vol:640,Ela:0.40},
+  tag:'Volume overload, sudden', summary:'Papillary muscle rupture, chordal rupture or endocarditis creates a low-resistance leak into a small, stiff left atrium.',
+  bullets:['No isovolumic contraction: the LV starts ejecting into the LA as soon as its pressure exceeds LA pressure, so the right side of the loop slopes leftward.','ESV falls (two outflow paths, lower effective afterload). EF looks high but forward SV is low.','The non-compliant LA produces giant v waves and high pulmonary pressures, leading to flash pulmonary edema.','No isovolumic relaxation either: the LV is still unloading into the LA while it relaxes.'],
+  try:'Reduce <b>SVR</b> (afterload reduction with nitroprusside or an intra-aortic balloon pump): forward SV rises and the regurgitant fraction falls. Compare the LA trace with chronic MR.'},
+ {id:'chronicMR', group:'Valve disease', name:'Chronic mitral regurgitation', p:{MRA:0.40,V0:35,k:0.015,Ees:2.8,Vol:720,Ela:0.07,Eaa:0.12},
+  tag:'Volume overload, compensated', summary:'Gradual MR lets the LA and LV both dilate. The compliant LA absorbs the regurgitant volume at modest pressure.',
+  bullets:['Large EDV with low LVEDP, because the EDPVR is shifted right.','Large total SV split between forward flow and the LA. The loop is wide with sloping isovolumic phases.','LA mean pressure and v waves stay modest, because a large compliant atrium buffers the regurgitant volume.','EF is supranormal because the LV unloads into the low-pressure LA. An EF below about 60% already suggests contractile dysfunction.'],
+  try:'Increase <b>LA stiffness</b> to the acute-MR value (0.4) and watch the v wave and pulmonary pressure rise. That isolates the role of atrial compliance.'},
+ {id:'AS', group:'Valve disease', name:'Aortic stenosis', p:{AVA:0.7,Ees:4.2,k:0.034,relax:1.6,Vol:610,Eaa:0.35},
+  tag:'Pressure overload', summary:'A narrowed aortic valve (here 0.7 cm², severe) forces the LV to generate much higher pressure than the aorta during ejection.',
+  bullets:['Tall loop: LV systolic pressure far exceeds aortic systolic pressure, and the gap is the transvalvular gradient.','Concentric hypertrophy: a steeper ESPVR (higher Ees) preserves SV and EF despite the load.','The hypertrophied wall is stiff and relaxes slowly. The EDPVR is steeper and LVEDP is raised.','Filling depends heavily on the atrial kick. Loss of sinus rhythm can cause sudden decompensation.','Stroke work and myocardial oxygen demand are high, which explains the angina even with normal coronaries.'],
+  try:'Set <b>atrial contraction</b> to 0 (atrial fibrillation) and watch SV and blood pressure drop. Then reduce <b>preload</b>: SV falls steeply. Patients with AS are preload-dependent, so vasodilators and diuretics need care.'},
+ {id:'MS', group:'Valve disease', name:'Mitral stenosis', p:{MVA:1.0,Ela:0.25,Eaa:0.2,Vol:640,HR:80},
+  tag:'Inflow obstruction', summary:'A narrowed mitral valve (here 1.0 cm², severe) limits LV filling. The LV itself is usually normal.',
+  bullets:['Small, underfilled loop: EDV, LVEDP and SV are all reduced.','LA pressure is high, with a large diastolic gradient across the mitral valve. This drives pulmonary venous hypertension and eventually pulmonary arterial hypertension.','Contractility is normal, so ESV sits on a normal ESPVR.','Tachycardia shortens diastole and worsens the gradient, which is why AF and exercise are poorly tolerated.'],
+  try:'Increase <b>heart rate</b> to 130 and watch the mitral gradient and LA pressure rise while EDV falls. Rate control (β-blockers) helps in MS.'},
+ {id:'DCM', group:'Cardiomyopathy & heart failure', name:'Dilated cardiomyopathy / HFrEF', p:{Ees:0.7,V0:70,k:0.017,Vol:730,SVR:1.3,HR:90,relax:1.3},
+  tag:'Systolic dysfunction', summary:'Loss of contractility with eccentric remodelling: the ESPVR flattens and the whole loop shifts far to the right.',
+  bullets:['Low Ees, so ESV is very large and EF is low (around 15–25%).','The EDPVR is shifted right by remodelling, so EDV is huge. SV is maintained partly by the Frank–Starling mechanism, at the price of raised filling pressures.','The flat ESPVR makes SV very sensitive to afterload, which is why vasodilators (ACE inhibitors, ARNI, hydralazine) raise output.','Neurohormonal compensation: tachycardia, high SVR and volume retention.'],
+  try:'Apply the <b>vasodilator</b> intervention and compare with normal. SV rises much more than it would in a healthy heart. Then try the <b>inotrope</b>.'},
+ {id:'HFpEF', group:'Cardiomyopathy & heart failure', name:'HFpEF / diastolic dysfunction', p:{Ees:4.2,k:0.045,relax:1.8,Ca:0.7,SVR:1.3,Vol:615},
+  tag:'Diastolic dysfunction', summary:'A stiff, slowly relaxing ventricle needs high filling pressure to reach a normal volume. EF is preserved.',
+  bullets:['The EDPVR is steep and shifted up and left. LVEDP is high at a normal or small EDV.','Slow relaxation (high τ) raises early-diastolic pressures.','Ventricular-arterial stiffening (high Ees and Ea, stiff arteries) gives labile blood pressure.','Very preload-sensitive: small volume changes cause big pressure swings, so patients flip between pulmonary edema and hypotension.','Tachycardia is poorly tolerated because relaxation is incomplete when diastole is short.'],
+  try:'Add <b>fluid +250 mL</b>: LVEDP jumps far more than in a normal heart. Then raise <b>HR</b> to 120 and watch filling fall.'},
+ {id:'HCM', group:'Cardiomyopathy & heart failure', name:'Hypertrophic cardiomyopathy (obstructive)', p:{Ees:5,V0:0,k:0.05,relax:2,AVA:1.0,MRA:0.1,Vol:615,SVR:1.2},
+  tag:'Hypertrophy + LVOT obstruction', summary:'A thick, small, hyperdynamic ventricle with impaired relaxation and outflow obstruction, plus systolic anterior motion (SAM) causing some MR.',
+  bullets:['Small cavity and very high EF. ESV approaches zero (cavity obliteration).','Steep EDPVR and slow relaxation give high LVEDP despite small volumes.','LV systolic pressure is far above aortic pressure because of the LVOT gradient. In this model it is a fixed narrowing; in reality it is dynamic.','Real obstruction worsens with less preload, less afterload or more contractility, which shrink the LV cavity.'],
+  try:'Simulate dynamic obstruction by hand: reduce <b>aortic valve area</b> to 0.6 as you lower <b>preload</b> (dehydration) or raise <b>Ees</b>. Treatment uses β-blockers, volume and phenylephrine, and avoids inotropes and vasodilators.'},
+ {id:'RCM', group:'Cardiomyopathy & heart failure', name:'Restrictive cardiomyopathy', p:{Ees:2.5,k:0.055,relax:1.5,Vol:700,HR:85,Ela:0.25,Eaa:0.15},
+  tag:'Severe stiffness', summary:'Infiltrative disease (amyloidosis, sarcoidosis, hemochromatosis) makes the myocardium extremely stiff. Systolic function is relatively preserved until late.',
+  bullets:['A very steep EDPVR: small EDV with very high filling pressures.','Rapid early filling that stops abruptly gives the dip-and-plateau LV pressure waveform.','Small, low-SV loop at near-normal EF. Cardiac output is rate-dependent and limited.','High LA and pulmonary pressures, with biatrial enlargement clinically.'],
+  try:'Change <b>preload</b> in both directions: there is little room between congestion and low output. Compare the shape with HFpEF using <b>Snapshot</b>.'},
+ {id:'shock', group:'Cardiomyopathy & heart failure', name:'Acute MI / cardiogenic shock', p:{Ees:0.9,k:0.03,HR:110,SVR:1.3,Vol:650},
+  tag:'Acute systolic failure', summary:'A large infarct abruptly reduces contractility before any remodelling has happened.',
+  bullets:['The ESPVR flattens suddenly. ESV and EDV rise, and SV and EF fall.','Without time to remodel, the ventricle climbs a normal or ischemically stiffened EDPVR, so LVEDP and pulmonary pressures rise quickly.','Hypotension with a narrow pulse pressure, compensatory tachycardia and vasoconstriction.','High SVR further reduces SV from a weak ventricle, creating a vicious cycle.'],
+  try:'Try the <b>inotrope</b> and the <b>vasopressor</b> separately. A pressor raises BP but shrinks SV. Lowering SVR (as an intra-aortic balloon pump effectively does) lifts SV.'},
+ {id:'HTN', group:'Cardiomyopathy & heart failure', name:'Chronic hypertension', p:{SVR:1.7,Ca:0.7,Ees:4,k:0.034,relax:1.3,Vol:600},
+  tag:'Pressure overload', summary:'High SVR and stiff arteries raise afterload. The LV adapts with concentric hypertrophy.',
+  bullets:['Tall loop at high pressures. The steeper Ea line reflects high afterload.','A steeper ESPVR (concentric hypertrophy) keeps SV near normal (Ees/Ea coupling).','Stiff arteries (low compliance) widen pulse pressure, producing isolated systolic hypertension.','A stiffer, slower-relaxing LV sets the stage for HFpEF.'],
+  try:'Lower <b>Ees</b> back to 3 while keeping SVR high to see SV fall without hypertrophic compensation.'},
+ {id:'hemorrhage', group:'Circulation & rhythm', name:'Hemorrhage / hypovolemia', p:{Vol:420,HR:115,SVR:1.5,Ees:3.6},
+  tag:'Low preload', summary:'Loss of circulating volume. The ventricle itself is normal.',
+  bullets:['A small loop sliding down the EDPVR: low EDV, low LVEDP and low SV.','Narrow pulse pressure, tachycardia and vasoconstriction. Sympathetic tone also boosts contractility.','Cardiac output is maintained only partly by heart rate.'],
+  try:'Press <b>Fluid +250 mL</b> twice and watch the loop widen back toward normal along the same EDPVR.'},
+ {id:'sepsis', group:'Circulation & rhythm', name:'Septic / vasodilatory shock', p:{SVR:0.5,HR:110,Ees:3.4,Vol:560,Ca:1.5},
+  tag:'Low afterload', summary:'Profound vasodilation lowers SVR. Early (warm) sepsis has high output with low blood pressure.',
+  bullets:['A low, flat Ea line. ESV is small and the loop sits at low pressure.','High cardiac output but low MAP and diastolic pressure.','Relative hypovolemia from venodilation and capillary leak.'],
+  try:'Use the <b>vasopressor</b> twice to restore MAP, then add <b>fluid</b>. Later septic cardiomyopathy can be simulated by lowering Ees.'},
+ {id:'AF', group:'Circulation & rhythm', name:'Atrial fibrillation (rapid)', p:{Eaa:0,HR:120},
+  tag:'Loss of atrial kick', summary:'No coordinated atrial contraction, at a fast ventricular rate. Beat-to-beat irregularity is not modelled.',
+  bullets:['Without the atrial kick and with a short diastole, EDV and SV fall.','Normal hearts tolerate this fairly well. Stiff ventricles (AS, HFpEF, HCM) and MS depend on the kick and on diastolic time, and can decompensate.'],
+  try:'Switch to the <b>Aortic stenosis</b> or <b>HFpEF</b> scenario, set atrial contraction to 0 and HR to 120, and compare the fall in SV with this scenario.'},
+ {id:'inotrope', group:'Circulation & rhythm', name:'Positive inotrope / exercise', p:{Ees:4.5,HR:100,SVR:0.9,relax:0.8},
+  tag:'Sympathetic stimulation', summary:'Dobutamine or exercise raises contractility and heart rate and speeds relaxation (lusitropy), with mild vasodilation.',
+  bullets:['A steeper ESPVR pushes ESV left and raises EF.','Faster relaxation preserves filling despite the higher rate.','Cardiac output rises, mostly from heart rate.'],
+  try:'Compare stroke work and the efficiency (SW/PVA) with normal.'},
+];
+
+const SLIDERS = [
+ {g:'Left ventricle'},
+ {k:'Ees', label:'Contractility (ESPVR slope, Ees)', min:0.3, max:7, step:0.05, unit:'mmHg/mL', d:2},
+ {k:'V0', label:'Unstressed volume V₀ (remodelling)', min:0, max:120, step:1, unit:'mL', d:0, hint:'Shifts the ESPVR and EDPVR right (dilation).'},
+ {k:'k', label:'Diastolic stiffness (EDPVR β)', min:0.006, max:0.08, step:0.001, unit:'/mL', d:3},
+ {k:'relax', label:'Relaxation time (τ)', min:0.6, max:2.5, step:0.05, unit:'× normal', d:2},
+ {g:'Loading conditions'},
+ {k:'Vol', label:'Preload (stressed blood volume)', min:300, max:1000, step:5, unit:'mL', d:0},
+ {k:'SVR', label:'Afterload (systemic vascular resistance)', min:0.3, max:3, step:0.01, unit:'mmHg·s/mL', d:2, extra:v=>`${Math.round(v*1333)} dyn·s·cm⁻⁵`},
+ {k:'Ca', label:'Arterial compliance', min:0.3, max:3, step:0.05, unit:'mL/mmHg', d:2},
+ {k:'HR', label:'Heart rate', min:40, max:180, step:1, unit:'bpm', d:0},
+ {g:'Valves'},
+ {k:'AVA', label:'Aortic valve area (stenosis)', min:0.4, max:4, step:0.05, unit:'cm²', d:2, extra:v=>v<1?'severe AS':v<1.5?'moderate AS':v<2?'mild AS':'normal'},
+ {k:'ARA', label:'Aortic regurgitation (EROA)', min:0, max:0.8, step:0.01, unit:'cm²', d:2, extra:v=>v===0?'none':v<0.1?'mild':v<0.3?'moderate':'severe'},
+ {k:'MVA', label:'Mitral valve area (stenosis)', min:0.6, max:5, step:0.05, unit:'cm²', d:2, extra:v=>v<=1?'severe MS':v<=1.5?'moderate MS':v<2.5?'mild MS':'normal'},
+ {k:'MRA', label:'Mitral regurgitation (EROA)', min:0, max:0.8, step:0.01, unit:'cm²', d:2, extra:v=>v===0?'none':v<0.2?'mild':v<0.4?'moderate':'severe'},
+ {g:'Left atrium'},
+ {k:'Ela', label:'LA stiffness (passive elastance)', min:0.04, max:0.6, step:0.01, unit:'mmHg/mL', d:2},
+ {k:'Eaa', label:'Atrial contraction (atrial kick)', min:0, max:0.6, step:0.01, unit:'mmHg/mL', d:2, extra:v=>v===0?'none (AF)':''},
+];
+
+// ---------- state ----------
+let P = Object.assign({}, NORMAL);
+let preset = PRESETS[0];
+let S = PVSim.steady(P, 30);
+let M = PVSim.metrics(S.lastBeat, P);
+const REF = (() => { const s = PVSim.steady(NORMAL, 30); return { beat: s.lastBeat, m: PVSim.metrics(s.lastBeat, NORMAL) }; })();
+let snap = null, paused = false, dirty = false;
+
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// ---------- presets UI ----------
+function buildPresets() {
+  const el = $('presetList'); el.innerHTML = '';
+  const groups = [...new Set(PRESETS.map(p => p.group))];
+  for (const g of groups) {
+    const h = document.createElement('div'); h.className = 'grp'; h.textContent = g; el.appendChild(h);
+    const c = document.createElement('div'); c.className = 'chips';
+    for (const pr of PRESETS.filter(p => p.group === g)) {
+      const b = document.createElement('button'); b.className = 'chip'; b.textContent = pr.name; b.dataset.id = pr.id;
+      b.onclick = () => loadPreset(pr.id); c.appendChild(b);
+    }
+    el.appendChild(c);
+  }
+}
+function loadPreset(id) {
+  preset = PRESETS.find(p => p.id === id);
+  const newP = Object.assign({}, NORMAL, preset.p);
+  setParams(newP, true);
+  document.querySelectorAll('#presetList .chip').forEach(b => b.classList.toggle('on', b.dataset.id === id));
+  renderNote();
+}
+
+// ---------- sliders ----------
+const sliderEls = {};
+function buildSliders() {
+  const el = $('sliders'); el.innerHTML = '';
+  for (const s of SLIDERS) {
+    if (s.g) { const h = document.createElement('div'); h.className = 'sgrp'; h.textContent = s.g; el.appendChild(h); continue; }
+    const w = document.createElement('div'); w.className = 'slider';
+    w.innerHTML = `<div class="top"><label for="s_${s.k}">${s.label}</label><span class="val" id="v_${s.k}"></span></div>
+      <input type="range" id="s_${s.k}" min="${s.min}" max="${s.max}" step="${s.step}">
+      <div class="hint" id="h_${s.k}">${s.hint || ''}</div>`;
+    el.appendChild(w);
+    const inp = w.querySelector('input');
+    inp.addEventListener('input', () => { const np = Object.assign({}, P); np[s.k] = +inp.value; setParams(np, false); });
+    sliderEls[s.k] = { s, w, inp };
+  }
+}
+function syncSliders() {
+  const base = Object.assign({}, NORMAL, preset.p);
+  for (const k in sliderEls) {
+    const { s, w, inp } = sliderEls[k];
+    if (+inp.value !== P[k]) inp.value = P[k];
+    $('v_' + k).innerHTML = `${P[k].toFixed(s.d)} <small>${s.unit}</small>`;
+    if (s.extra) $('h_' + k).textContent = s.extra(P[k]);
+    w.classList.toggle('changed', Math.abs(P[k] - base[k]) > 1e-9);
+  }
+}
+
+// change parameters, conserving blood volume sensibly
+function setParams(np, fromPreset) {
+  np = Object.assign({}, np);
+  for (const k in sliderEls) { const s = sliderEls[k].s; np[k] = Math.min(s.max, Math.max(s.min, np[k])); }
+  if (np.V0 !== P.V0) S.Vlv += np.V0 - P.V0;            // remodelling moves the LV volume with it
+  P = np;
+  const before = PVSim.totalStressed(S, P);
+  const diff = P.Vol - before;                           // add/remove blood in the venous reservoir
+  S.Vsv = Math.max(1, S.Vsv + diff);
+  if ($('ckSettle').checked) { PVSim.run(S, P, fromPreset ? 25 : 8); }
+  M = PVSim.metrics(S.lastBeat, P);
+  syncSliders(); renderMetrics(); dirty = true;
+}
+
+// ---------- interventions ----------
+document.querySelectorAll('[data-iv]').forEach(b => b.onclick = () => {
+  const np = Object.assign({}, P);
+  switch (b.dataset.iv) {
+    case 'fluid': np.Vol += 250; break;
+    case 'bleed': np.Vol -= 250; break;
+    case 'vasodil': np.SVR *= 0.7; break;
+    case 'pressor': np.SVR *= 1.3; break;
+    case 'inotrope': np.Ees *= 1.4; break;
+    case 'bblock': np.HR -= 20; np.Ees *= 0.85; break;
+  }
+  setParams(np, false);
+});
+$('resetPreset').onclick = () => loadPreset(preset.id);
+$('resetNormal').onclick = () => loadPreset('normal');
+$('snapBtn').onclick = () => { snap = { beat: S.lastBeat, p: Object.assign({}, P), name: preset.name }; $('lgSnap').hidden = false; dirty = true; };
+$('clearSnap').onclick = () => { snap = null; $('lgSnap').hidden = true; dirty = true; };
+$('pauseBtn').onclick = () => { paused = !paused; $('pauseBtn').textContent = paused ? 'Play' : 'Pause'; };
+['ckRef','ckLines','ckEa','ckEvents'].forEach(id => $(id).onchange = () => { dirty = true; $('lgRef').hidden = !$('ckRef').checked; });
+$('themeBtn').onclick = () => {
+  const r = document.documentElement;
+  const cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  r.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('pvTheme', r.dataset.theme); } catch (e) {}
+  dirty = true;
+};
+try { const t = localStorage.getItem('pvTheme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+
+// ---------- teaching note ----------
+function renderNote() {
+  const p = preset;
+  $('note').innerHTML = `<span class="tag">${p.tag}</span><h3>${p.name}</h3><p>${p.summary}</p>
+   <ul>${p.bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+   <div class="try"><b>Try this:</b> ${p.try}</div>`;
+}
+
+// ---------- metrics ----------
+const ROWS = [
+ ['sec','Volumes'],
+ ['EDV','End-diastolic volume','mL',0],
+ ['ESV','End-systolic volume','mL',0],
+ ['SVt','Total stroke volume (EDV−ESV)','mL',0],
+ ['fSV','Forward stroke volume','mL',0],
+ ['EF','Ejection fraction','%',0],
+ ['RV','Regurgitant volume','mL',0],
+ ['RF','Regurgitant fraction','%',0],
+ ['sec','Pressures'],
+ ['BP','Aortic pressure (sys/dia)','mmHg',0],
+ ['MAP','Mean arterial pressure','mmHg',0],
+ ['LVSP','LV peak systolic pressure','mmHg',0],
+ ['LVEDP','LV end-diastolic pressure','mmHg',0],
+ ['LAP','Mean LA pressure','mmHg',0],
+ ['LAmax','Peak LA pressure (v wave)','mmHg',0],
+ ['PAP','Mean pulmonary pressure','mmHg',0],
+ ['AVg','Aortic valve gradient (peak/mean)','mmHg',0],
+ ['MVmean','Mean mitral gradient','mmHg',1],
+ ['sec','Output, work & coupling'],
+ ['CO','Cardiac output (forward)','L/min',1],
+ ['SW','Stroke work (loop area)','mmHg·mL',0],
+ ['SWJ','Stroke work','J',2],
+ ['eff','Mechanical efficiency (SW/PVA)','%',0],
+ ['Ea','Arterial elastance Ea (ESP/SV)','mmHg/mL',2],
+ ['coup','Coupling Ees/Ea','',2],
+ ['dpdt','dP/dt max','mmHg/s',0],
+];
+function val(m, k, p) {
+  if (k === 'BP') return null;
+  if (k === 'AVg') return null;
+  if (k === 'coup') return m.Ea > 0 ? p.Ees / m.Ea : 0;
+  return m[k];
+}
+function fmt(x, d) { return (x == null || !isFinite(x)) ? '—' : x.toFixed(d); }
+function arrow(v, r) {
+  if (v == null || r == null) return '';
+  const base = Math.max(Math.abs(r), 1);
+  if (Math.abs(v - r) / base > 0.15) return v > r ? ' <span class="up">↑</span>' : ' <span class="down">↓</span>';
+  return '';
+}
+function renderMetrics() {
+  const m = M, r = REF.m;
+  const k = [
+    ['EF', fmt(m.EF,0), '%', fmt(r.EF,0)+' %'],
+    ['Forward SV', fmt(m.fSV,0), 'mL', fmt(r.fSV,0)+' mL'],
+    ['CO', fmt(m.CO,1), 'L/min', fmt(r.CO,1)+' L/min'],
+    ['BP', `${fmt(m.SBP,0)}/${fmt(m.DBP,0)}`, '', `${fmt(r.SBP,0)}/${fmt(r.DBP,0)}`],
+  ];
+  $('kpis').innerHTML = k.map(([l,v,u,n]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v} <small>${u}</small></div><div class="n">normal ${n}</div></div>`).join('');
+  let h = '<tr><th>Measure</th><th>Current</th><th>Normal</th></tr>';
+  for (const row of ROWS) {
+    if (row[0] === 'sec') { h += `<tr class="sec"><td colspan="3">${row[1]}</td></tr>`; continue; }
+    const [key, label, unit, d] = row;
+    let cur, ref;
+    if (key === 'BP') { cur = `${fmt(m.SBP,0)}/${fmt(m.DBP,0)}${arrow(m.SBP, r.SBP)}`; ref = `${fmt(r.SBP,0)}/${fmt(r.DBP,0)}`; }
+    else if (key === 'AVg') { cur = `${fmt(m.AVpk,0)}/${fmt(m.AVmean,0)}${arrow(m.AVmean, r.AVmean)}`; ref = `${fmt(r.AVpk,0)}/${fmt(r.AVmean,0)}`; }
+    else { const v = val(m, key, P), rv = val(r, key, NORMAL); cur = fmt(v, d) + arrow(v, rv); ref = fmt(rv, d); }
+    h += `<tr><td>${label}${unit ? ` <span style="color:var(--muted)">(${unit})</span>` : ''}</td><td>${cur}</td><td class="ref">${ref}</td></tr>`;
+  }
+  $('mtable').innerHTML = h;
+}
+
+// ---------- canvas helpers ----------
+function setup(c) {
+  const dpr = window.devicePixelRatio || 1, r = c.getBoundingClientRect();
+  const w = Math.max(10, Math.round(r.width)), h = Math.max(10, Math.round(r.height));
+  if (c.width !== w * dpr || c.height !== h * dpr) { c.width = w * dpr; c.height = h * dpr; }
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+function niceStep(range, n) { const raw = range / n, mag = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw / mag; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag; }
+function axes(ctx, box, x0, x1, y0, y1, xl, yl, nx = 6, ny = 5) {
+  const { l, t, w, h } = box;
+  ctx.font = '11px system-ui, sans-serif'; ctx.lineWidth = 1;
+  const sx = niceStep(x1 - x0, nx), sy = niceStep(y1 - y0, ny);
+  ctx.strokeStyle = css('--grid'); ctx.fillStyle = css('--muted');
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let x = Math.ceil(x0 / sx) * sx; x <= x1 + 1e-9; x += sx) {
+    const px = l + (x - x0) / (x1 - x0) * w; ctx.beginPath(); ctx.moveTo(px, t); ctx.lineTo(px, t + h); ctx.stroke();
+    ctx.fillText(+x.toFixed(6), px, t + h + 4);
+  }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let y = Math.ceil(y0 / sy) * sy; y <= y1 + 1e-9; y += sy) {
+    const py = t + h - (y - y0) / (y1 - y0) * h; ctx.beginPath(); ctx.moveTo(l, py); ctx.lineTo(l + w, py); ctx.stroke();
+    ctx.fillText(+y.toFixed(6), l - 5, py);
+  }
+  ctx.strokeStyle = css('--line'); ctx.strokeRect(l, t, w, h);
+  ctx.fillStyle = css('--muted'); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText(xl, l + w / 2, t + h + 32);
+  ctx.save(); ctx.translate(13, t + h / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'middle'; ctx.fillText(yl, 0, 0); ctx.restore();
+  return { X: x => l + (x - x0) / (x1 - x0) * w, Y: y => t + h - (y - y0) / (y1 - y0) * h };
+}
+function path(ctx, xs, ys, X, Y, close) {
+  ctx.beginPath();
+  for (let i = 0; i < xs.length; i++) { const px = X(xs[i]), py = Y(ys[i]); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+  if (close) ctx.closePath();
+}
+function valveEvents(b) {
+  const n = b.t.length; let mvc = -1, avo = -1, avc = -1, mvo = -1;
+  for (let i = 0; i < n; i++) { if (b.Qmv[i] <= 0) { mvc = i; break; } }
+  for (let i = Math.max(mvc, 0); i < n; i++) { if (b.Qav[i] > 0) { avo = i; break; } }
+  if (avo >= 0) for (let i = avo; i < n; i++) { if (b.Qav[i] <= 0) { avc = i; break; } }
+  if (avc >= 0) for (let i = avc; i < n; i++) { if (b.Qmv[i] > 0) { mvo = i; break; } }
+  return [['MVC', mvc], ['AVO', avo], ['AVC', avc], ['MVO', mvo]].filter(e => e[1] >= 0);
+}
+
+// ---------- PV loop ----------
+let axV = 200, axP = 150;
+function drawPV() {
+  const c = $('pv'), { ctx, w, h } = setup(c);
+  const beats = [S.lastBeat]; if ($('ckRef').checked) beats.push(REF.beat); if (snap) beats.push(snap.beat);
+  let vmax = 0, pmax = 0;
+  for (const b of beats) { for (const v of b.Vlv) vmax = Math.max(vmax, v); for (const p of b.Plv) pmax = Math.max(pmax, p); }
+  const tv = Math.max(200, Math.ceil(vmax * 1.12 / 50) * 50), tp = Math.max(150, Math.ceil(pmax * 1.1 / 25) * 25);
+  axV = tv; axP = tp;
+  const box = { l: 52, t: 12, w: w - 66, h: h - 56 };
+  const { X, Y } = axes(ctx, box, 0, axV, 0, axP, 'LV volume (mL)', 'LV pressure (mmHg)', 8, 6);
+  ctx.save(); ctx.beginPath(); ctx.rect(box.l, box.t, box.w, box.h); ctx.clip();
+  const lines = (p, col, alpha) => {
+    ctx.globalAlpha = alpha; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.5;
+    ctx.strokeStyle = col.es; ctx.beginPath(); ctx.moveTo(X(p.V0), Y(0)); ctx.lineTo(X(p.V0 + axP * 1.2 / p.Ees), Y(axP * 1.2)); ctx.stroke();
+    ctx.strokeStyle = col.ed; ctx.beginPath();
+    for (let v = p.V0, first = true; v <= axV; v += 2) { const pr = p.A * (Math.exp(p.k * (v - p.V0)) - 1); if (first) { ctx.moveTo(X(v), Y(pr)); first = false; } else ctx.lineTo(X(v), Y(pr)); if (pr > axP * 1.2) break; }
+    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  };
+  if ($('ckLines').checked) {
+    if ($('ckRef').checked) lines(NORMAL, { es: css('--ref'), ed: css('--ref') }, 0.45);
+    lines(P, { es: css('--espvr'), ed: css('--edpvr') }, 1);
+  }
+  if ($('ckRef').checked) { ctx.setLineDash([6, 4]); ctx.lineWidth = 2; ctx.strokeStyle = css('--ref'); path(ctx, REF.beat.Vlv, REF.beat.Plv, X, Y, true); ctx.stroke(); ctx.setLineDash([]); }
+  if (snap) { ctx.setLineDash([7, 4]); ctx.lineWidth = 2; ctx.strokeStyle = css('--snap'); path(ctx, snap.beat.Vlv, snap.beat.Plv, X, Y, true); ctx.stroke(); ctx.setLineDash([]); }
+  const b = S.lastBeat;
+  if ($('ckEa').checked) {
+    const es = M.iES;
+    ctx.setLineDash([2, 4]); ctx.lineWidth = 1.5; ctx.strokeStyle = css('--ea');
+    ctx.beginPath(); ctx.moveTo(X(M.EDV), Y(0)); ctx.lineTo(X(b.Vlv[es]), Y(b.Plv[es])); ctx.stroke(); ctx.setLineDash([]);
+  }
+  // fill + loop
+  ctx.fillStyle = css('--lv'); ctx.globalAlpha = 0.08; path(ctx, b.Vlv, b.Plv, X, Y, true); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.lineWidth = 2.6; ctx.strokeStyle = css('--lv'); path(ctx, b.Vlv, b.Plv, X, Y, true); ctx.stroke();
+  // ES point
+  ctx.fillStyle = css('--espvr'); ctx.beginPath(); ctx.arc(X(b.Vlv[M.iES]), Y(b.Plv[M.iES]), 3.5, 0, 7); ctx.fill();
+  if ($('ckEvents').checked) {
+    ctx.font = '600 10.5px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    const cx = (M.EDV + M.ESV) / 2;
+    for (const [lab, i] of valveEvents(b)) {
+      const px = X(b.Vlv[i]), py = Y(b.Plv[i]);
+      ctx.fillStyle = css('--panel'); ctx.strokeStyle = css('--ink'); ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = css('--ink');
+      const right = b.Vlv[i] > cx; ctx.textAlign = right ? 'left' : 'right';
+      const up = lab === 'AVO' || lab === 'AVC';
+      ctx.fillText(lab, px + (right ? 6 : -6), py + (up ? -9 : 9));
+    }
+  }
+  // live dot
+  if (S.cur) { ctx.fillStyle = css('--lv'); ctx.beginPath(); ctx.arc(X(S.cur.Vlv), Y(S.cur.Plv), 6, 0, 7); ctx.fill();
+    ctx.strokeStyle = css('--panel'); ctx.lineWidth = 2; ctx.stroke(); }
+  ctx.restore();
+  // corner label
+  ctx.font = '600 12px system-ui, sans-serif'; ctx.fillStyle = css('--ink'); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText(preset.name + (anyChanged() ? ' (modified)' : ''), box.l + 8, box.t + 6);
+  if (snap) { ctx.fillStyle = css('--snap'); ctx.font = '11px system-ui, sans-serif'; ctx.fillText('Snapshot: ' + snap.name, box.l + 8, box.t + 22); }
+}
+function anyChanged() { const base = Object.assign({}, NORMAL, preset.p); return Object.keys(sliderEls).some(k => Math.abs(P[k] - base[k]) > 1e-9); }
+
+// ---------- traces ----------
+function drawTrace(id, series, ylab, yminForce) {
+  const c = $(id), { ctx, w, h } = setup(c);
+  const b = S.lastBeat, T = b.T * 1000;
+  let lo = Infinity, hi = -Infinity;
+  for (const s of series) for (const v of s.y) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  if (yminForce != null) lo = Math.min(lo, yminForce);
+  const pad = (hi - lo) * 0.08 || 5; hi += pad; if (yminForce == null) lo -= pad;
+  const box = { l: 52, t: 8, w: w - 66, h: h - 44 };
+  const { X, Y } = axes(ctx, box, 0, T, lo, hi, 'Time in cardiac cycle (ms)', ylab, 8, 4);
+  ctx.save(); ctx.beginPath(); ctx.rect(box.l, box.t, box.w, box.h); ctx.clip();
+  if (lo < 0) { ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(T), Y(0)); ctx.stroke(); }
+  const ts = b.t.map(t => t * 1000);
+  for (const s of series) {
+    ctx.strokeStyle = css(s.c); ctx.lineWidth = s.wd || 2; if (s.dash) ctx.setLineDash(s.dash);
+    path(ctx, ts, s.y, X, Y, false); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const cx = X(S.tb * 1000); ctx.strokeStyle = css('--muted'); ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx, box.t); ctx.lineTo(cx, box.t + box.h); ctx.stroke(); ctx.globalAlpha = 1;
+  ctx.restore();
+}
+function drawAll() {
+  drawPV();
+  const b = S.lastBeat;
+  drawTrace('cP', [{ y: b.Pao, c: '--ao' }, { y: b.Pla, c: '--la' }, { y: b.Plv, c: '--lv', wd: 2.4 }], 'Pressure (mmHg)', 0);
+  drawTrace('cV', [{ y: b.Vlv, c: '--lv', wd: 2.4 }], 'LV volume (mL)');
+  drawTrace('cQ', [{ y: b.Qav, c: '--ao' }, { y: b.Qmv, c: '--la' }], 'Valve flow (mL/s)');
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!paused) {
+    const beforeBeat = S.lastBeat;
+    PVSim.run(S, P, dt * +$('speed').value);
+    if (S.lastBeat !== beforeBeat) { M = PVSim.metrics(S.lastBeat, P); renderMetrics(); }
+    dirty = true;
+  }
+  if (dirty) { drawAll(); dirty = false; }
+  requestAnimationFrame(frame);
+}
+window.addEventListener('resize', () => { dirty = true; });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { dirty = true; });
+
+buildPresets(); buildSliders(); loadPreset('normal');
+drawAll();
+requestAnimationFrame(frame);
+window.PVApp = { loadPreset, get M() { return M; }, get P() { return P; }, PRESETS, REF };
+})();
+
+</script>
+</body>
+</html>

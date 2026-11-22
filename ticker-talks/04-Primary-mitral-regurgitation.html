@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Primary mitral regurgitation</title>
+<!--
+  TICKER TALKS ENGINE v1.0
+  Single self-contained file. No internet needed. Open in any modern browser.
+  To make a new session: copy this file and edit ONLY the SESSION object in the
+  <script id="session"> block near the bottom. The engine below it never changes.
+
+  Presenter keys:  → / Space next   ← back   A–E pick an option   R reveal
+                   N presenter notes   T light/dark   F fullscreen   + / − text size
+                   P print handout (every step revealed)   Home first slide
+                   0 reset (clears answers, score and timer for a fresh audience)
+  On a phone/tablet: swipe left/right, or use the buttons at the bottom.
+-->
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface2:#efeee8; --ink:#1b1d22; --muted:#5b606b;
+  --line:#d9d7cf; --accent:#b4232f; --accent-ink:#ffffff; --accent-soft:#f6dfe1;
+  --ok:#1f7a4d; --ok-soft:#dcf1e5; --bad:#a8322a; --bad-soft:#f8e1de; --warn:#8a5a00; --warn-soft:#fbefd4;
+  --info:#24527a; --info-soft:#e0ebf5;
+  --ecg-bg:#fff7f7; --ecg-minor:#f3c9cc; --ecg-major:#e38f96; --ecg-trace:#111;
+  --scale:1;
+}
+:root[data-theme="dark"]{
+  --bg:#121417; --surface:#1b1e23; --surface2:#23272e; --ink:#eef0f3; --muted:#a3a9b4;
+  --line:#343a43; --accent:#ff5d68; --accent-ink:#1a0a0c; --accent-soft:#3a1c20;
+  --ok:#5fd39a; --ok-soft:#163327; --bad:#ff8a7f; --bad-soft:#3a1d1a; --warn:#f3c061; --warn-soft:#382b10;
+  --info:#8cc2f0; --info-soft:#17283a;
+  --ecg-bg:#14171b; --ecg-minor:#2b2226; --ecg-major:#5a3238; --ecg-trace:#9ff5c4;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:calc(clamp(16px,0.9vw + 9px,24px) * var(--scale));line-height:1.45;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+/* top bar */
+.bar{position:fixed;inset:0 0 auto 0;height:3.0em;display:flex;align-items:center;gap:.6em;padding:0 1em;
+  background:var(--surface);border-bottom:1px solid var(--line);z-index:5;font-size:.62em}
+.brand{font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.brand b{color:var(--accent)}
+.bar .title{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.chip{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:.25em .8em;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--muted)}
+.timer.over{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.timer.near{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.progress{position:fixed;top:3.0em;left:0;height:4px;background:var(--accent);transition:width .25s;z-index:6;font-size:.62em}
+/* stage */
+main{position:absolute;inset:0;padding:calc(3.0em*.62 + 18px) 0 calc(3.2em*.62 + 16px);overflow-y:auto}
+.slide{max-width:1180px;margin:0 auto;padding:0 16px 1em;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.kicker{display:inline-flex;gap:.5em;align-items:center;font-size:.7em;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin:.4em 0 .2em}
+.kicker .clock{font-variant-numeric:tabular-nums;background:var(--accent);color:var(--accent-ink);padding:.05em .55em;border-radius:6px;letter-spacing:.02em}
+h1{font-size:2.1em;line-height:1.1;margin:.2em 0 .3em;letter-spacing:-.01em}
+h2{font-size:1.45em;line-height:1.15;margin:.15em 0 .5em;letter-spacing:-.005em}
+h3{font-size:1.05em;margin:.8em 0 .3em}
+p{margin:.4em 0}
+ul,ol{margin:.3em 0 .5em;padding-left:1.3em}
+li{margin:.18em 0}
+.muted{color:var(--muted)}
+.small{font-size:.8em}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.8em 1em;margin:.6em 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.vitals{display:flex;flex-wrap:wrap;gap:.5em;margin:.5em 0}
+.vital{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.3em .7em;min-width:6.2em}
+.vital .k{font-size:.62em;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.vital .v{font-size:1.15em;font-weight:700;font-variant-numeric:tabular-nums}
+.vital.flag{border-color:var(--bad);background:var(--bad-soft)}
+.vital.flag .v{color:var(--bad)}
+.frag{margin:.5em 0;padding:.55em .9em;border-left:4px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;animation:fade .25s ease}
+.frag,.explain{scroll-margin-bottom:28px}
+.frag.pearl{border-left-color:var(--info);background:var(--info-soft)}
+.frag.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.ask{font-size:1.1em;font-weight:650;margin:.6em 0;padding:.6em .9em;border:2px dashed var(--accent);border-radius:12px;background:var(--accent-soft)}
+.ask::before{content:"🗣 Ask the room: ";color:var(--accent)}
+.hint{font-size:.7em;color:var(--muted);margin-top:.8em}
+/* options */
+.opts{display:grid;gap:.5em;margin:.7em 0}
+.opt{display:flex;gap:.7em;align-items:flex-start;text-align:left;width:100%;padding:.6em .8em;border-radius:12px;border:2px solid var(--line);background:var(--surface);cursor:pointer}
+.opt:hover{border-color:var(--muted)}
+.opt .L{flex:0 0 auto;width:1.8em;height:1.8em;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--surface2);border:1px solid var(--line)}
+.opt .body{flex:1}
+.opt .fb{display:none;font-size:.85em;margin-top:.35em}
+.opt.chosen{border-color:var(--info);box-shadow:0 0 0 3px var(--info-soft)}
+.opt.chosen .L{background:var(--info);color:var(--surface);border-color:var(--info)}
+.revealed .opt{cursor:default}
+.revealed .opt .fb{display:block}
+.revealed .opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.revealed .opt.right .L{background:var(--ok);color:var(--surface);border-color:var(--ok)}
+.revealed .opt.wrong{opacity:.8}
+.revealed .opt.wrong.chosen{border-color:var(--bad);background:var(--bad-soft);opacity:1}
+.revealed .opt.wrong.chosen .L{background:var(--bad);border-color:var(--bad)}
+.tag{display:inline-block;font-size:.7em;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:.05em .5em;border-radius:6px;margin-right:.4em}
+.tag.ok{background:var(--ok);color:var(--surface)}
+.tag.no{background:var(--bad);color:var(--surface)}
+.explain{display:none}
+.revealed .explain{display:block;animation:fade .25s ease}
+.btnrow{display:flex;gap:.5em;flex-wrap:wrap;margin:.6em 0}
+.btn{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:.45em 1em;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.revealed .btn.reveal{display:none}
+/* title slide */
+.hero{min-height:58vh;display:flex;flex-direction:column;justify-content:center}
+.hero .series{font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-size:.8em}
+.hero .sub{font-size:1.15em;color:var(--muted);max-width:44em}
+.meta{display:flex;flex-wrap:wrap;gap:.5em;margin-top:1em;font-size:.75em}
+.meta span{border:1px solid var(--line);border-radius:999px;padding:.2em .8em;background:var(--surface)}
+.pulse{display:block;width:min(520px,90%);height:60px;margin:.4em 0 .6em}
+.pulse path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round;stroke-dasharray:900;stroke-dashoffset:900;animation:draw 2.2s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+/* mapping */
+.epa{display:flex;gap:.6em;align-items:baseline;margin:.35em 0}
+.epa code{flex:0 0 auto;font:700 .72em ui-monospace,Menlo,Consolas,monospace;background:var(--info-soft);color:var(--info);padding:.15em .5em;border-radius:6px}
+.role{font-weight:700;color:var(--info)}
+/* ECG */
+.ecg{width:100%;max-height:56vh;border:1px solid var(--line);border-radius:10px;background:var(--ecg-bg);cursor:zoom-in;display:block}
+.ecg .minor{stroke:var(--ecg-minor);stroke-width:.5}
+.ecg .major{stroke:var(--ecg-major);stroke-width:1}
+.ecg .trace{fill:none;stroke:var(--ecg-trace);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ecg text{fill:var(--ecg-trace);font:700 15px system-ui,sans-serif}
+.ecg .hl{fill:var(--accent);opacity:.12}
+.phono{width:100%;display:block;background:var(--surface);border:1px solid var(--line);border-radius:10px;cursor:zoom-in;max-height:40vh}
+.phono .base{stroke:var(--line);stroke-width:1.5}
+.phono .snd{stroke:var(--ink);stroke-width:2.2}
+.phono .mur{stroke:var(--accent);stroke-width:1.6;opacity:.85}
+.phono .brk{fill:none;stroke:var(--muted);stroke-width:1.5}
+.phono text{fill:var(--muted);font:600 15px system-ui,sans-serif;text-anchor:middle}
+.phono .sl{fill:var(--ink);font-weight:800}
+.phono .ml{fill:var(--accent);font-weight:700}
+.zoom .phono{background:var(--surface)}
+details.objs summary{cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;gap:.5em}
+details.objs summary::-webkit-details-marker{display:none}
+details.objs summary::before{content:"▸";color:var(--accent);transition:transform .15s}
+details.objs[open] summary::before{transform:rotate(90deg)}
+details.objs[open] summary{margin-bottom:.4em}
+.ecgcap{font-size:.72em;color:var(--muted);margin:.25em 0 .4em}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:12px;cursor:zoom-out}
+.zoom svg{width:100%;max-height:100%;cursor:zoom-out}
+@media (max-width:760px){.zoom{overflow:auto;justify-content:flex-start}.zoom svg{width:auto;height:auto;min-width:980px;max-height:none}}
+/* notes + nav */
+.notes{display:none;margin:1em 0;padding:.7em 1em;border-radius:12px;background:var(--warn-soft);border:1px solid var(--warn);font-size:.8em}
+.notes::before{content:"Presenter notes";display:block;font-weight:800;text-transform:uppercase;font-size:.75em;letter-spacing:.08em;color:var(--warn);margin-bottom:.2em}
+body.show-notes .notes{display:block}
+.nav{position:fixed;inset:auto 0 0 0;height:3.2em;display:flex;align-items:center;justify-content:space-between;gap:.5em;padding:0 1em;
+  background:var(--surface);border-top:1px solid var(--line);z-index:5;font-size:.62em}
+.nav .count{color:var(--muted);font-variant-numeric:tabular-nums}
+.nav .btn{padding:.5em 1.3em}
+.score{font-weight:700}
+table.t{border-collapse:collapse;width:100%;font-size:.85em;margin:.4em 0}
+table.t th,table.t td{border-bottom:1px solid var(--line);padding:.35em .5em;text-align:left;vertical-align:top}
+table.t th{color:var(--muted);font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:.04em}
+.refs li{font-size:.72em;margin:.35em 0}
+.disclaimer{font-size:.68em;color:var(--muted);border-top:1px solid var(--line);margin-top:1em;padding-top:.5em}
+#printall{display:none}
+@media (max-width:500px){.vital .k,.tag{font-size:11px}}
+@media print{
+  .bar,.progress,.nav,#stage,.zoom{display:none!important}
+  #printall{display:block}
+  main{position:static;padding:0;overflow:visible}
+  body{font-size:11pt;background:#fff;color:#000}
+  .slide{page-break-inside:avoid;break-inside:avoid;border-bottom:1px solid #ccc;padding:10pt 0;animation:none;max-width:none}
+  .frag,.explain,.slide,.pulse path{animation:none!important;opacity:1!important}
+  .notes{display:block}
+  .opt .fb,.explain{display:block}
+  .hero{min-height:0}
+  .ecg{cursor:default}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <a class="brand" href="./" title="All Ticker Talks" style="text-decoration:none;color:inherit">Ticker<b>Talks</b></a>
+  <span class="title" id="bartitle"></span>
+  <button class="chip timer" id="timer" title="Start / pause timer (click). Double-click to reset.">⏱ 00:00</button>
+  <button class="chip" id="notesBtn" title="Presenter notes (N)">Notes</button>
+  <button class="chip" id="themeBtn" title="Light / dark (T)">◐</button>
+  <button class="chip" id="fsBtn" title="Fullscreen (F)">⛶</button>
+</div>
+<div class="progress" id="progress"></div>
+<main id="main"><div id="stage"></div><div id="printall"></div></main>
+<div class="nav">
+  <button class="btn" id="prev">← Back</button>
+  <span class="count" id="count"></span>
+  <button class="btn primary" id="next">Next →</button>
+</div>
+
+<!-- ======================= SESSION CONTENT (edit this) ======================= -->
+<script id="session">
+window.SESSION = {
+meta: {
+  id: "04-primary-mr",
+  series: "Ticker Talks · CCU Teaching", number: "04",
+  title: "The asymptomatic flail",
+  subtitle: "Primary (degenerative) mitral regurgitation: dynamic auscultation, grading severity, when to operate on someone who feels fine, and the acute MR you can't miss.",
+  duration: "15 min", minutes: 15,
+  audience: "IM residents (PGY1–3), clerks", setting: "CCU / ward teaching", updated: "Nov 2026",
+  disclaimer: "Teaching case. The patient is fictional. There is no current comprehensive Canadian valvular guideline, so this session follows ESC/EACTS 2025 and ACC/AHA 2020. Heart-sound diagrams are schematic. Objectives are numbered as in the <i>Objectives of Training in the Specialty of Internal Medicine</i> (2011, v1.0)."
+},
+objectives: [
+  "Use <b>dynamic auscultation</b> to recognise mitral valve prolapse and flail leaflets.",
+  "Grade MR as <b>severe</b> using integrated echo criteria.",
+  "Know the <b>triggers for surgery</b> in asymptomatic severe primary MR, and why <b>repair</b> beats replacement.",
+  "Recognise <b>acute MR</b> after MI (papillary muscle rupture) and act immediately."
+],
+mappingTitle: "Internal medicine training objectives covered",
+mapping: [
+  { code: "ME 2.1.2.10", title: "Valvular heart disease", how: "degenerative MR" },
+  { code: "ME 2.1.2.5", title: "Cardiac murmurs", how: "click-murmur, maneuvers, eccentric jets" },
+  { code: "ME 2.1.2.9", title: "Acute coronary syndromes and their complications", how: "papillary muscle rupture" },
+  { code: "ME 2.1.1.3", title: "Shock, including knowledge and identification of the different etiologies", how: "acute MR with cardiogenic shock" },
+  { code: "ME 2.1.13.3", title: "Infective endocarditis", how: "who needs dental prophylaxis (MCQ 1)" },
+  { code: "ME 6.2", title: "Demonstrate effective, appropriate, and timely consultation of another health professional as needed for optimal patient care", how: "referral to a heart valve centre" },
+  { code: "Communicator 4.4", title: "Engage patients, families, and relevant health professionals in shared decision-making to develop a plan of care", how: "surgery for an asymptomatic patient" }
+],
+canmeds: [
+  { role: "Communicator", point: "\"You feel fine, and I'm recommending heart surgery.\" Explain the reasoning: operating before the LV fails preserves normal life expectancy." },
+  { role: "Leader", point: "Outcomes of mitral repair depend on volume. Referring to a high-volume heart valve centre is a quality decision, not just a convenience." },
+  { role: "Scholar", point: "Guidelines use surrogate thresholds (LVEF ≤60%, LVESD ≥40 mm) that come from observational outcome data. Know where the numbers come from." }
+],
+phonos: {
+  flail: {
+    label: "Severe primary MR: holosystolic murmur with S3",
+    caption: "Severe MR from a flail posterior leaflet: <b>holosystolic</b> apical murmur that extends up to S2, often with an <b>S3</b> from the high diastolic flow (it doesn't mean systolic failure here).",
+    sounds: [{type:"S1",amp:0.7},{type:"S2"},{type:"S3",amp:0.6}],
+    murmurs: [{from:0.035,to:0.36,shape:"plateau",amp:0.6,label:"holosystolic"}]
+  },
+  mvp: {
+    label: "Mitral valve prolapse: mid-systolic click and late systolic murmur",
+    caption: "Earlier in the disease (MVP): a <b>mid-systolic click</b> followed by a <b>late systolic murmur</b>.",
+    sounds: [{type:"S1"},{type:"click",at:0.21,amp:0.8,label:"click"},{type:"S2"}],
+    murmurs: [{from:0.225,to:0.355,shape:"crescendo",amp:0.5,label:"late systolic"}]
+  }
+},
+slides: [
+{ type: "title", notes: "<b>0:00–0:30.</b> Hook: the hardest conversation in valve disease is recommending surgery to someone who feels perfectly well." },
+{ type: "objectives", notes: "<b>0:30–1:00.</b>" },
+
+{ type: "case", clock: "Clinic", kicker: "Referral after an insurance medical",
+  title: "\"I run 10 km three times a week.\"",
+  html: "<p><b>Mr. D., 54</b>, a software developer. An examiner heard a murmur at an insurance medical. He has no symptoms, takes no medications, and has normal BP. His father had a \"leaky valve\" repaired at 60.</p>",
+  vitals: [["HR","64 reg"],["BP","124/72"],["SpO₂","98%"]],
+  steps: [
+    "<b>Exam:</b> apex laterally displaced and hyperdynamic. A grade 3/6 <b>holosystolic</b> murmur at the apex that radiates toward the <b>base and left sternal border</b> rather than the axilla. There is an S3.",
+    { phono: "flail" },
+    { style: "pearl", html: "<b>Jet direction follows the opposite leaflet:</b> a flail <b>posterior</b> leaflet throws the jet <b>anteriorly</b>, so the murmur radiates to the base and can mimic AS. A flail <b>anterior</b> leaflet sends it posteriorly, to the axilla and back." }
+  ],
+  notes: "<b>1:00–2:30.</b> Ask: would you call this AS? Why not? (Holosystolic, not crescendo-decrescendo; normal carotid upstroke; S2 preserved.)" },
+
+{ type: "decision", title: "Dynamic auscultation",
+  phono: "mvp", phonoCaption: "His brother (43) has an earlier form of the same disease.",
+  prompt: "In mitral valve prolapse, which maneuver moves the click <b>earlier</b> and makes the murmur <b>longer</b>?",
+  options: [
+    { t: "Squatting from standing", fb: "Squatting <b>increases</b> venous return and LV size, so the prolapse happens later and the click moves later." },
+    { t: "Standing up from a squat", ok: true, fb: "Less preload means a smaller LV, so the leaflets prolapse earlier in systole. The click moves toward S1 and the murmur lengthens. Hypertrophic obstructive cardiomyopathy also gets louder with these maneuvers." },
+    { t: "Sustained isometric handgrip", fb: "Handgrip raises afterload. It makes the MR louder and enlarges the LV, so it <i>delays</i> the click." },
+    { t: "Passive leg raise while supine", fb: "Raises preload, so the click moves later." }
+  ],
+  explain: "<b>Rule:</b> anything that <b>shrinks the LV</b> (standing, Valsalva, nitrates) brings the click earlier and lengthens the murmur. Anything that <b>enlarges</b> the LV (squatting, leg raise) does the opposite.",
+  notes: "<b>2:30–4:00.</b> This is a classic exam station." },
+
+{ type: "decision", kicker: "TTE", title: "He feels fine. Do you operate?",
+  html: "<table class='t'><tr><th>Finding</th><th>Result</th><th>Severe MR / trigger</th></tr>"+
+  "<tr><td>Mechanism</td><td><b>Flail P2</b> with ruptured chordae</td><td>flail = severe</td></tr>"+
+  "<tr><td>EROA / regurgitant volume / fraction</td><td><b>0.50 cm² / 75 mL / 55%</b></td><td>≥0.40 / ≥60 / ≥50%</td></tr>"+
+  "<tr><td>Vena contracta</td><td><b>0.8 cm</b>, systolic flow reversal in pulmonary veins</td><td>≥0.7 cm</td></tr>"+
+  "<tr><td>LVEF</td><td><b>62%</b></td><td>≤60% → surgery</td></tr>"+
+  "<tr><td>LV end-systolic diameter</td><td><b>41 mm</b></td><td>≥40 mm → surgery</td></tr>"+
+  "<tr><td>LA volume index / PASP / rhythm</td><td>52 mL/m² · 35 mmHg · sinus</td><td>-</td></tr></table>",
+  prompt: "What is your recommendation?",
+  options: [
+    { t: "Surveillance echo every 6–12 months, operate when symptoms appear", fb: "Waiting for symptoms means operating on a damaged LV. He already meets an LV-size trigger." },
+    { t: "Transcatheter edge-to-edge repair (TEER) because it's less invasive", fb: "TEER is for primary MR at <b>high surgical risk</b>. In a fit 54-year-old, surgical repair gives the most durable result." },
+    { t: "Refer for mitral valve repair now", ok: true, fb: "Asymptomatic severe primary MR with <b>LVESD ≥40 mm</b> (or LVEF ≤60%) is a class I indication for surgery. LVEF ≤60% in MR is already reduced, because the LV unloads into the low-pressure atrium." },
+    { t: "Start an ACE inhibitor to reduce afterload and delay surgery", fb: "Vasodilators don't delay surgery in normotensive chronic primary MR. Treat hypertension if present." }
+  ],
+  explain: "<b>Surgery triggers in asymptomatic severe primary MR:</b> LVEF ≤60% · LVESD ≥40 mm (ESC also uses LVESDi ≥20 mm/m²) · new AF · PASP >50 mmHg · marked LA dilation. <b>ESC/EACTS 2025:</b> in low-risk asymptomatic patients with preserved LV function, repair is <b>recommended (I)</b> when ≥3 of these are present: AF, SPAP >50 mmHg, LAVI ≥60 mL/m² (or LA diameter ≥55 mm), moderate or worse TR. With fewer, it <b>should be considered (IIa)</b> at a heart valve centre where durable repair is likely. ACC/AHA 2020 supports it (IIa) when expected success is >95% and mortality <1%.",
+  notes: "<b>4:00–6:30.</b> Ask why 60% is the cut-off in MR. Because LVEF is inflated when the LV can eject backward into the LA." },
+
+{ type: "decision", title: "Which operation?",
+  prompt: "Best surgical strategy for an isolated flail P2?",
+  options: [
+    { t: "Repair at a high-volume valve centre", ok: true, fb: "Posterior leaflet prolapse is the most repairable lesion: >95% durable repair at reference centres, preserved LV function, no long-term anticoagulation. Minimally invasive approaches are available at expert centres." },
+    { t: "Mitral valve replacement with a mechanical prosthesis", fb: "Replacement loses the subvalvular apparatus and needs lifelong warfarin. It is reserved for valves that can't be repaired." },
+    { t: "Transcatheter edge-to-edge repair (TEER), avoiding sternotomy", fb: "This is for patients who are inoperable or at high surgical risk with suitable anatomy (ESC/EACTS 2025 IIa; ACC/AHA 2020 2a). In EVEREST II, surgical candidates did better with surgery, so it is not first-line for a low-risk patient." },
+    { t: "Bioprosthetic replacement to avoid warfarin", fb: "Better than mechanical for some, but still inferior to repair for degenerative posterior leaflet disease." }
+  ],
+  explain: "<b>Where</b> the repair is done matters as much as <b>what</b> is done. Repair rates and durability depend on surgeon and centre volume.",
+  notes: "<b>6:30–7:45.</b>" },
+
+{ type: "decision", clock: "CCU · Day 4", kicker: "A different patient", title: "Sudden pulmonary edema after an inferior MI",
+  html: "<p><b>Mr. B., 67</b>, day 4 after a late-presenting inferior STEMI (RCA occlusion, PCI). He is suddenly breathless. <b>BP 84/50</b>, HR 118, SpO₂ 82%, cold peripheries. He has a <b>soft, short</b> early systolic murmur, or none at all. The ECG is unchanged.</p>",
+  prompt: "Most important next steps?",
+  options: [
+    { t: "IV furosemide 80 mg, CPAP and a formal echo in the morning", fb: "Too slow. This is likely a mechanical complication, and mortality is very high without surgery." },
+    { t: "Repeat coronary angiography and PCI of non-culprit vessels", fb: "This doesn't fix a ruptured papillary muscle." },
+    { t: "IV metoprolol for the tachycardia", fb: "The tachycardia is compensating for a falling forward stroke volume. Beta-blockade could precipitate collapse." },
+    { t: "Bedside echo, IABP or MCS, emergency surgery", ok: true, fb: "Suspect <b>papillary muscle rupture</b>: flail leaflet with severe MR and a hyperdynamic LV. Unload first with an <b>IABP or other MCS</b>, intubate if needed, and get the surgical team immediately. Add nitroprusside only once MAP allows." }
+  ],
+  explain: "<b>Why the murmur is soft:</b> in acute MR the small, non-compliant LA pressure rises fast and equalises with the LV, so the jet is brief and the murmur may be quiet or absent. <b>Don't let a quiet chest reassure you.</b> The <b>posteromedial</b> papillary muscle (single supply, usually from the PDA) ruptures more often than the anterolateral (dual supply). <b>On a PA catheter:</b> giant v waves in the PCWP tracing. A VSR instead gives an O₂ saturation step-up from RA to PA.",
+  notes: "<b>7:45–9:30.</b> Contrast with VSR (harsh holosystolic murmur, thrill, O₂ step-up)." },
+
+{ type: "teach", title: "Grading MR: the integrated approach",
+  steps: [
+    "<b>Specific signs of severe MR:</b> flail leaflet or ruptured papillary muscle · vena contracta ≥0.7 cm · large central jet >50% of the LA · <b>systolic flow reversal</b> in the pulmonary veins.",
+    "<b>Quantitative:</b> EROA ≥0.40 cm² · regurgitant volume ≥60 mL · regurgitant fraction ≥50%. For eccentric jets, colour jet area underestimates severity.",
+    "<b>Consequences:</b> LV and LA dilation, rising PASP, new AF. These both confirm severity and trigger surgery.",
+    "<b>Carpentier mechanism:</b> I normal leaflet motion (annular dilation, perforation) · II excess motion (prolapse, flail: this case) · IIIa restricted in systole and diastole (rheumatic) · IIIb restricted in systole (ischemic or functional MR, session 05).",
+    { style: "pearl", html: "When TTE is equivocal: <b>TEE</b> (mechanism, repairability) or <b>cardiac MRI</b> (regurgitant volume, LV volumes). <b>Arrhythmic MVP:</b> bileaflet prolapse, mitral annular disjunction, inferior T inversion and frequent PVCs mark higher arrhythmic risk. Monitor and consider MRI." }
+  ],
+  notes: "<b>9:30–10:45.</b>" },
+
+{ type: "mcqintro", notes: "<b>10:45.</b>" },
+
+{ type: "mcq",
+  stem: "<p>A 41-year-old woman has mitral valve prolapse with moderate MR. She has never had endocarditis and has no prosthetic material. She is booked for a dental extraction.</p><p><b>What is the most appropriate endocarditis prophylaxis?</b></p>",
+  options: ["No antibiotic prophylaxis is recommended","Amoxicillin 2 g orally 30–60 minutes before the procedure","Clindamycin 600 mg orally before the procedure","Amoxicillin before and 6 hours after the procedure","Prophylaxis only if a murmur is audible on the day"],
+  answer: 0,
+  explain: "AHA and ESC limit dental prophylaxis to the highest-risk patients: prosthetic valves or prosthetic material used for repair, prior IE, certain congenital heart disease, and (AHA) cardiac transplant valvulopathy. ESC 2023 also includes TAVI and ventricular assist devices. <b>Native MVP or MR is not an indication.</b> Good dental hygiene matters more.",
+  ref: "Wilson WR et al. AHA 2021; Delgado V et al. ESC 2023 Endocarditis" },
+
+{ type: "mcq",
+  stem: "<p>A 61-year-old asymptomatic man has severe primary MR from posterior leaflet prolapse. LVEF 64%, LVESD 38 mm, LA volume index 65 mL/m², PASP 54 mmHg. He has had two episodes of paroxysmal AF in the last month. His surgical risk is low and the valve looks highly repairable.</p><p><b>What is the most appropriate management?</b></p>",
+  options: ["Surveillance echo in 6 months, since no LV trigger is met", "Start an ACE inhibitor and repeat the echo in 6 months", "Exercise echo, with surgery only if he develops symptoms", "Refer for mitral valve repair at a heart valve centre", "Transcatheter edge-to-edge repair"],
+  answer: 3,
+  explain: "His LV triggers (LVEF ≤60%, LVESD ≥40 mm) aren't met, but he has <b>AF, SPAP >50 and LAVI ≥60</b>. Under ESC/EACTS 2025, ≥3 of these in a low-risk patient makes repair <b>recommended (class I)</b>, and ACC/AHA 2020 supports early repair when success is likely. Surveillance waits for LV damage. ACE inhibitors don't delay surgery in primary MR. TEER is for high surgical risk.",
+  ref: "ESC/EACTS 2025; ACC/AHA 2020" },
+
+{ type: "mcq",
+  stem: "<p>A 74-year-old man with severe primary MR has NYHA III symptoms. STS predicted mortality is 3%, with mild frailty. TEE shows <b>Barlow disease</b>: bileaflet prolapse with multiple scallops involved and a heavily calcified annulus.</p><p><b>What is the most appropriate management?</b></p>",
+  options: ["Transcatheter edge-to-edge repair, because he is over 70", "Surgery at a reference heart valve centre", "Increase diuretics and reassess in 6 months", "Palliative care only", "Transcatheter mitral valve replacement as first-line"],
+  answer: 1,
+  explain: "He is <b>not high risk</b> (STS 3%), and complex bileaflet Barlow anatomy with a calcified annulus is <b>unfavourable for TEER</b>. Surgery at a reference centre (repair if possible, replacement if not) is preferred. TEER is reasonable for <i>high</i> surgical risk with <i>suitable</i> anatomy (ESC/EACTS 2025 IIa; ACC/AHA 2020 2a). Medical therapy doesn't change primary MR. TMVR is still investigational for this group.",
+  ref: "ESC/EACTS 2025; ACC/AHA 2020" },
+
+{ type: "mcq",
+  stem: "<p>Three days after an inferior STEMI, a 68-year-old woman develops flash pulmonary edema. BP 82/48, HR 118. There is a soft systolic murmur. Bedside echo shows a hyperdynamic LV and a <b>flail posterior mitral leaflet</b> with severe MR.</p><p><b>What is the best immediate step?</b></p>",
+  options: ["Urgent PCI of a non-culprit circumflex lesion", "IV metoprolol to slow the heart rate", "IABP (or other MCS) and emergency cardiac surgery", "Norepinephrine alone and repeat the echo in 6 hours", "Transcatheter edge-to-edge repair as definitive therapy"],
+  answer: 2,
+  explain: "<b>Papillary muscle rupture</b> (usually posteromedial, single PDA supply, in the first week after inferior MI). Unload with an <b>IABP or other MCS</b> and arrange <b>emergency surgery</b>. PCI doesn't fix the rupture. Beta-blockade removes compensatory tachycardia. Vasopressors alone raise afterload and worsen MR. TEER has been used as a bailout in non-surgical patients, but surgery is the standard.",
+  ref: "ACC/AHA ACS 2025; ESC ACS 2023; ACC/AHA VHD 2020" },
+
+{ type: "summary",
+  pearls: [
+    "<b>Standing or Valsalva</b> brings the MVP click earlier and lengthens the murmur. <b>Squatting</b> delays it.",
+    "<b>Severe MR</b> means integrating the signs: flail, VC ≥0.7 cm, EROA ≥0.40, RVol ≥60, RF ≥50%, pulmonary vein flow reversal.",
+    "Operate on asymptomatic severe primary MR when <b>LVEF ≤60% or LVESD ≥40 mm</b> (or AF or PASP >50). Early repair at a heart valve centre is now favoured.",
+    "<b>Repair is better than replacement.</b> TEER is for high surgical risk.",
+    "Post-MI flash pulmonary edema with a <b>soft</b> murmur: think papillary muscle rupture, and get echo and surgery immediately."
+  ],
+  notes: "<b>14:30.</b>" },
+{ type: "refs" }
+],
+references: [
+  "Praz F, Borger MA, et al. 2025 ESC/EACTS Guidelines for the management of valvular heart disease. <i>Eur Heart J</i>. 2025;46:4635–4736.",
+  "Otto CM, Nishimura RA, Bonow RO, et al. 2020 ACC/AHA Guideline for the Management of Patients With Valvular Heart Disease. <i>Circulation</i>. 2021;143:e72–e227.",
+  "Zoghbi WA, Adams D, Bonow RO, et al. Recommendations for noninvasive evaluation of native valvular regurgitation (ASE). <i>J Am Soc Echocardiogr</i>. 2017;30:303–371.",
+  "Feldman T, Foster E, Glower DD, et al. Percutaneous repair or surgery for mitral regurgitation (EVEREST II). <i>N Engl J Med</i>. 2011;364:1395–1406.",
+  "Wilson WR, Gewitz M, Lockhart PB, et al. Prevention of viridans group streptococcal infective endocarditis: AHA Scientific Statement. <i>Circulation</i>. 2021;143:e963–e978.",
+  "Delgado V, Ajmone Marsan N, de Waha S, et al. 2023 ESC Guidelines for the management of endocarditis. <i>Eur Heart J</i>. 2023;44:3948–4042.",
+  "Rao SV, O'Donoghue ML, Ruel M, et al. 2025 ACC/AHA/ACEP/NAEMSP/SCAI Guideline for the Management of Patients With Acute Coronary Syndromes. <i>Circulation</i>. 2025;151:e771–e862. · Byrne RA, Rossello X, Coughlan JJ, et al. 2023 ESC Guidelines for the management of acute coronary syndromes. <i>Eur Heart J</i>. 2023;44:3720–3826.",
+  "Royal College of Physicians and Surgeons of Canada. <i>Objectives of Training in the Specialty of Internal Medicine</i>, 2011 Version 1.0. Copyright © 2011 The Royal College of Physicians and Surgeons of Canada. Referenced and produced with permission."
+]
+};
+
+</script>
+<!-- ======================= ENGINE (do not edit) ============================== -->
+<script>
+(function(){
+"use strict";
+const S = window.SESSION;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LET = "ABCDEFGH";
+document.title = S.meta.title + " · Ticker Talks";
+$("#bartitle").textContent = S.meta.title;
+
+/* ---------- build the slide list ---------- */
+const slides = S.slides.slice();
+let mcqCount = slides.filter(s => s.type === "mcq").length;
+let mcqNo = 0;
+slides.forEach(s => { if (s.type === "mcq") s._n = ++mcqNo; });
+
+/* ---------- state ---------- */
+const st = { i:0, step:0, choice:{}, revealed:{}, timer:{run:false, t0:0, acc:0} };
+try { const saved = JSON.parse(sessionStorage.getItem("tt:"+S.meta.id) || "null"); if (saved) Object.assign(st, saved, {timer:{run:false,t0:0,acc:saved.timer?saved.timer.acc:0}}); } catch(e){}
+let h=NaN; try { h = parseInt((location.hash.match(/s=(\d+)/)||[])[1]||"",10); } catch(e){}
+if (!isNaN(h) && h>=1 && h<=slides.length) { if (h-1 !== st.i) { st.i = h-1; st.step = 0; } }
+function save(){ try { sessionStorage.setItem("tt:"+S.meta.id, JSON.stringify({i:st.i,step:st.step,choice:st.choice,revealed:st.revealed,timer:{acc:elapsed()}})); } catch(e){} }
+
+/* ---------- ECG renderer ----------
+   Leads are drawn from simple parameters (all in mm at 10 mm/mV):
+   {r: R height, q: Q depth, s: S depth, st: ST offset at J point (+ elevation / − depression),
+    t: T amplitude (negative = inverted), p: P amplitude}
+   A lead may be given as a string to copy another lead's shape. */
+function beatPts(L){
+  const pts=[], p=L.p==null?1.2:L.p, q=L.q||0, r=L.r==null?8:L.r, s=L.s||0, j=L.st||0, t=L.t==null?2.5:L.t;
+  pts.push([0,0]);
+  for(let k=0;k<=10;k++){const u=k/10;pts.push([0.4+2.4*u,p*Math.sin(Math.PI*u)]);}
+  pts.push([4.2,0]); pts.push([4.7,-q]); pts.push([5.5,r]); pts.push([6.3,-s]); if (L.rp) pts.push([6.75,L.rp]);
+  pts.push([7.0,j]);
+  // ST segment holds near the J-point level, then returns to baseline as the T wave ends
+  for(let k=1;k<=28;k++){const u=k/28; const base = u<0.45 ? j : j*(1-Math.pow((u-0.45)/0.55,1.4));
+    const bump=t*Math.pow(Math.sin(Math.PI*Math.max(0,(u-0.12)/0.88)),1.4);
+    pts.push([7.0+8.5*u, base+bump]);}
+  // w = QRS width multiplier (1 = narrow ~40 ms; 3.5–4 = wide ~140–160 ms)
+  const w=L.w||1; if (w!==1) return pts.map(([x,y])=>[x<=4.2?x:(x<=7.0?4.2+(x-4.2)*w:x+2.8*(w-1)),y]);
+  return pts;
+}
+function renderECG(spec){
+  const MM=4, rowH=spec.rowH||36, rows=spec.rows, W=spec.width||250;
+  const rhythm = spec.rhythm ? 1 : 0;
+  const H=rowH*(rows.length+rhythm);
+  const hr=spec.hr||75, rr=25*60/hr;
+  let g=`<svg class="ecg" viewBox="0 0 ${W*MM} ${H*MM}" role="img" aria-label="${esc(spec.label||'ECG')}" xmlns="http://www.w3.org/2000/svg">`;
+  let minor="", major="";
+  for(let x=0;x<=W;x++){ (x%5?(minor+=`M${x*MM} 0V${H*MM}`):(major+=`M${x*MM} 0V${H*MM}`)); }
+  for(let y=0;y<=H;y++){ (y%5?(minor+=`M0 ${y*MM}H${W*MM}`):(major+=`M0 ${y*MM}H${W*MM}`)); }
+  g+=`<path class="minor" d="${minor}"/><path class="major" d="${major}"/>`;
+  const leadOf = n => { let L=spec.leads[n]; let guard=0; while(typeof L==="string" && guard++<5) L=spec.leads[L]; return L||{r:0,t:0,p:0}; };
+  const frac = v => v - Math.floor(v);
+  const irr = spec.af && !spec.regular; const rrMin = irr ? rr*0.75 : rr;
+  const wMax = Math.max(1,...Object.values(spec.leads).map(L=>(L&&L.w)||1)); const sc = Math.max(0.35, Math.min(1, (rrMin-(4.6+2.8*wMax))/8.5));   // shorten ST-T at fast rates
+  const drawStrip = (name, x0, y0, w, label, offset) => {
+    const L0=leadOf(name), L=spec.af?Object.assign({},L0,{p:0}):L0;
+    const jx=4.2+2.8*(L.w||1); const b=beatPts(L).map(([px,py])=>[px<=jx?px:jx+(px-jx)*sc, py]); let d="";
+    const seed=(name.length*7+(x0|0))%13;
+    const rrAt = i => irr ? rr*(0.75+0.75*frac(Math.sin((i+seed+1)*12.9898)*43758.5453)) : rr;
+    const fib = X => spec.af ? (0.35*Math.sin(X*2.1)+0.25*Math.sin(X*3.7+1)) : 0;
+    let x=x0, base=y0+rowH*0.62;
+    const seg=(a,e)=>{ if(spec.af){ for(let X=a;X<=e;X+=0.5) d+=`L${(X*MM).toFixed(1)} ${((base-fib(X))*MM).toFixed(1)}`; } else d+=`L${(e*MM).toFixed(1)} ${(base*MM).toFixed(1)}`; };
+    // calibration pulse at strip start
+    if (x0===0){ d+=`M${x*MM} ${base*MM}h${1*MM}v${-10*MM}h${5*MM}v${10*MM}h${1*MM}`; x+=8; } else { d+=`M${x*MM} ${base*MM}`; }
+    let start=x+(offset||1.5), k=0;
+    seg(x,start);
+    while(start < x0+w-1){
+      let lastX=start;
+      if (start+b[b.length-1][0] > x0+w-0.5) { seg(start, x0+w-0.5); break; } // never draw a clipped beat
+      for(const [px,py] of b){ const X=start+px; if (X>x0+w-0.5) break; d+=`L${(X*MM).toFixed(1)} ${((base-py)*MM).toFixed(1)}`; lastX=X; }
+      const next=start+rrAt(k++); const endB=Math.min(next, x0+w-0.5);
+      if (lastX<endB) seg(lastX,endB);
+      start=next;
+    }
+    if (spec.highlight && spec.highlight.includes(name)) g+=`<rect class="hl" x="${x0*MM}" y="${y0*MM}" width="${w*MM}" height="${rowH*MM}"/>`;
+    g+=`<path class="trace" d="${d}"/>`;
+    g+=`<text x="${(x0+ (x0===0?9:1.5))*MM}" y="${(y0+5)*MM}">${esc(label||name)}</text>`;
+  };
+  rows.forEach((row,ri)=>{ const cw=W/row.length; row.forEach((name,ci)=>drawStrip(name, ci*cw, ri*rowH, cw, (spec.labels||{})[name], ci===0?1.5:(ci*1.3)%rr)); });
+  if (rhythm) drawStrip(spec.rhythm, 0, rows.length*rowH, W, (spec.labels||{})[spec.rhythm]||spec.rhythm+" (rhythm)");
+  g+=`</svg>`;
+  return g;
+}
+/* ---------- Phonocardiogram (murmur timing diagram) ----------
+   spec: { cycles:2, label, caption,
+           sounds:[{type:"S1"|"S2"|"A2"|"P2"|"S3"|"S4"|"OS"|"click"|"EC", at:0–1 (optional), amp:0–1.5, label}],
+           murmurs:[{from:0–1, to:0–1, shape:"diamond"|"plateau"|"decrescendo"|"crescendo"|"rumble", peak:0–1, amp:0–1, label}] }
+   One cardiac cycle runs 0→1: S1 at 0.02, S2 at 0.36 (systole 0.02–0.36, diastole 0.36–1). */
+const SND_AT={S1:0.02,S2:0.36,A2:0.36,P2:0.41,OS:0.45,S3:0.53,S4:0.93,click:0.2,EC:0.08};
+function renderPhono(spec){
+  const W=1000, H=230, mid=120, n=spec.cycles||2, cw=(W-40)/n, x0=20;
+  let g=`<svg class="phono" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.label||'Heart sounds and murmur timing')}" xmlns="http://www.w3.org/2000/svg">`;
+  g+=`<line class="base" x1="0" y1="${mid}" x2="${W}" y2="${mid}"/>`;
+  const rnd=i=>{const v=Math.sin(i*91.7)*43758.5;return v-Math.floor(v);};
+  for(let c=0;c<n;c++){
+    const X=f=>x0+c*cw+f*cw;
+    // phase brackets
+    if(c===0){ g+=`<path class="brk" d="M${X(0.02)} 26v-8H${X(0.36)}v8"/><text class="ph" x="${(X(0.02)+X(0.36))/2}" y="14">systole</text>`;
+               g+=`<path class="brk" d="M${X(0.37)} 26v-8H${X(0.995)}v8"/><text class="ph" x="${(X(0.37)+X(0.995))/2}" y="14">diastole</text>`; }
+    (spec.murmurs||[]).forEach((m,mi)=>{
+      const a=m.amp==null?0.7:m.amp, steps=Math.max(6,Math.round((m.to-m.from)*cw/3.2)); let d="";
+      for(let k=0;k<=steps;k++){
+        const u=k/steps, pk=m.peak==null?0.5:m.peak; let e;
+        switch(m.shape){
+          case "plateau": e=Math.min(1,u*8,(1-u)*8); break;
+          case "decrescendo": e=Math.min(1,u*12)*(1-u*0.85); break;
+          case "crescendo": e=0.2+0.8*u; break;
+          case "rumble": e=Math.min(1,u*8)*(u<0.6?(1-u*0.9):(0.45+1.3*(u-0.6))); break;
+          default: e=u<pk?u/pk:(1-u)/(1-pk);
+        }
+        const jit = m.shape==="rumble" ? 0.55+0.45*rnd(k+mi*7+c*13) : 0.82+0.18*rnd(k+mi*5+c*11);
+        const h=Math.max(1.5,e*a*70*jit), xx=X(m.from+(m.to-m.from)*u);
+        d+=`M${xx.toFixed(1)} ${(mid-h).toFixed(1)}V${(mid+h).toFixed(1)}`;
+      }
+      g+=`<path class="mur" d="${d}"/>`;
+      if(c===0 && m.label) g+=`<text class="ml" x="${X((m.from+m.to)/2)}" y="${mid+92}">${esc(m.label)}</text>`;
+    });
+    (spec.sounds||[]).forEach((sd,si)=>{
+      const at=sd.at!=null?sd.at:(SND_AT[sd.type]||0), amp=sd.amp==null?1:sd.amp, xx=X(at); let d="";
+      const lines=(sd.type==="click"||sd.type==="EC"||sd.type==="OS")?3:5;
+      for(let k=0;k<lines;k++){ const h=amp*80*(k===Math.floor(lines/2)?1:(0.55+0.3*rnd(k+si))); d+=`M${(xx+(k-lines/2)*2.6).toFixed(1)} ${mid-h}V${mid+h}`; }
+      g+=`<path class="snd ${sd.type}" d="${d}"/>`;
+      g+=`<text class="sl" x="${xx}" y="${H-8}">${esc(sd.label||sd.type)}</text>`;
+    });
+  }
+  return g+`</svg>`;
+}
+function phonoBlock(key, cap){
+  const spec=(S.phonos||{})[key]; if(!spec) return "";
+  return `<div class="phonowrap">${renderPhono(spec)}</div><div class="ecgcap">${cap||spec.caption||""} <span class="muted">· tap to enlarge · timing diagram (schematic)</span></div>`;
+}
+function ecgBlock(key, cap){
+  const spec = S.ecgs[key]; if(!spec) return "";
+  return `<div class="ecgwrap" data-ecg="${esc(key)}">${renderECG(spec)}</div><div class="ecgcap">${cap||spec.caption||""} <span class="muted">· tap to enlarge · 25 mm/s, 10 mm/mV (schematic)</span></div>`;
+}
+
+/* ---------- slide renderers ---------- */
+function vitalsHTML(v){ return v?`<div class="vitals">${v.map(x=>`<div class="vital${x[2]?' flag':''}"><div class="k">${esc(x[0])}</div><div class="v">${esc(x[1])}</div></div>`).join("")}</div>`:""; }
+function kicker(s){ return (s.kicker||s.clock)?`<div class="kicker">${s.clock?`<span class="clock">${esc(s.clock)}</span>`:""}${s.kicker?esc(s.kicker):""}</div>`:""; }
+function fragHTML(f){ if(typeof f==="string") return `<div class="frag">${f}</div>`; const cls=f.style?` ${f.style}`:""; return `<div class="frag${cls}">${f.ecg?ecgBlock(f.ecg,f.caption):""}${f.phono?phonoBlock(f.phono,f.caption):""}${f.html||""}</div>`; }
+function notesHTML(s){ return s.notes?`<div class="notes">${s.notes}</div>`:""; }
+function optsHTML(s, idx){
+  return `<div class="opts">${s.options.map((o,k)=>{
+    const ok = (s.type==="mcq") ? (k===s.answer) : !!o.ok;
+    return `<button class="opt ${ok?'right':'wrong'}" data-k="${k}"><span class="L">${LET[k]}</span><span class="body">${typeof o==="string"?o:o.t}${o&&o.fb?`<span class="fb">${ok?'<span class="tag ok">Best</span>':'<span class="tag no">No</span>'}${o.fb}</span>`:""}</span></button>`;}).join("")}</div>`;
+}
+const R = {
+  title(s){ const m=S.meta; return `<div class="hero">
+    <div class="series">${esc(m.series||"Ticker Talks")}${m.number?` · Session ${esc(m.number)}`:""}</div>
+    <svg class="pulse" viewBox="0 0 520 60" aria-hidden="true"><path d="M0 40 H150 l10 -6 l10 6 H200 l8 6 l12 -44 l12 52 l8 -14 H300 q20 -18 40 0 H520"/></svg>
+    <h1>${m.title}</h1><div class="sub">${m.subtitle||""}</div>
+    <div class="meta">${m.duration?`<span>⏱ ${esc(m.duration)}</span>`:""}${m.audience?`<span>👥 ${esc(m.audience)}</span>`:""}${m.setting?`<span>📍 ${esc(m.setting)}</span>`:""}${m.updated?`<span>Updated ${esc(m.updated)}</span>`:""}</div>
+    ${s.html||""}</div>`; },
+  objectives(s){ return `${kicker({kicker:"Before we start"})}<h2>${s.title||"By the end of this talk you can…"}</h2>
+    <ol>${S.objectives.map(o=>`<li>${o}</li>`).join("")}</ol>
+    <details class="card objs"><summary>${S.mappingTitle||"Internal medicine training objectives this case covers"} <span class="muted small">(${(S.mapping||S.epas||[]).length})</span></summary>${(S.mapping||S.epas||[]).map(e=>`<div class="epa"><code>${esc(e.code)}</code><span>${e.title}${e.how?` <span class="muted small">· ${e.how}</span>`:""}</span></div>`).join("")}</details>`; },
+  case(s){ return `${kicker(s)}<h2>${s.title||""}</h2>${s.html||""}${vitalsHTML(s.vitals)}${s.ecg?ecgBlock(s.ecg,s.caption):""}${s.phono?phonoBlock(s.phono,s.phonoCaption):""}${s.ask?`<div class="ask">${s.ask}</div>`:""}`; },
+  teach(s){ return `${kicker(Object.assign({kicker:"Teaching point"},s))}<h2>${s.title||""}</h2>${s.html||""}${s.ecg?ecgBlock(s.ecg,s.caption):""}${s.phono?phonoBlock(s.phono,s.phonoCaption):""}`; },
+  decision(s,idx){ return `${kicker(Object.assign({kicker:"Decision point"},s))}<h2>${s.title||""}</h2>${s.html||""}${s.ecg?ecgBlock(s.ecg,s.caption):""}${s.phono?phonoBlock(s.phono,s.phonoCaption):""}${s.prompt?`<div class="ask">${s.prompt}</div>`:""}
+     ${optsHTML(s,idx)}<div class="btnrow"><button class="btn primary reveal">Reveal answer (R)</button></div>
+     <div class="explain">${s.explain?`<div class="frag pearl">${s.explain}</div>`:""}</div>`; },
+  mcq(s,idx){ return `${kicker({kicker:`MCQ ${s._n} of ${mcqCount}`})}<div class="stem" style="font-size:1.02em">${s.stem}</div>${s.ecg?ecgBlock(s.ecg,s.caption):""}
+     ${optsHTML(s,idx)}<div class="btnrow"><button class="btn primary reveal">Reveal answer (R)</button></div>
+     <div class="explain"><div class="frag pearl"><b>Answer: ${LET[s.answer]}.</b> ${s.explain||""}${s.ref?`<div class="small muted" style="margin-top:.4em">📚 ${s.ref}</div>`:""}</div></div>`; },
+  mcqintro(s){ return `<div class="hero">${kicker({kicker:"Check your understanding"})}<h1>${s.title||"Practice MCQs"}</h1>
+     <p class="sub">${s.html||`${mcqCount} single-best-answer questions. Pick an answer on your own first (fingers up for A–E), then reveal.`}</p></div>`; },
+  summary(s){ const roles=S.canmeds||[]; return `${kicker({kicker:"Take-home"})}<h2>${s.title||"Take-home points"}</h2>
+     <ol>${(s.pearls||[]).map(p=>`<li>${p}</li>`).join("")}</ol>
+     <div class="score" id="scorebox"></div>
+     ${roles.length?`<div class="card"><h3 style="margin-top:0">CanMEDS lens</h3>${roles.map(r=>`<p><span class="role">${esc(r.role)}:</span> ${r.point}</p>`).join("")}</div>`:""}`; },
+  refs(s){ return `${kicker({kicker:"Sources"})}<h2>${s.title||"References"}</h2><ol class="refs">${S.references.map(r=>`<li>${r}</li>`).join("")}</ol>
+     ${S.meta.disclaimer?`<div class="disclaimer">${S.meta.disclaimer}</div>`:""}`; },
+};
+function stepsOf(s){ return (s.steps||[]).length; }
+function slideHTML(s, idx, all){
+  const fn = R[s.type] || R.teach;
+  let html = fn(s, idx);
+  const steps = s.steps||[];
+  const n = all ? steps.length : (idx===st.i ? st.step : 0);
+  html += steps.slice(0,n).map(fragHTML).join("");
+  if (!all && n < steps.length && !(s.options && !st.revealed[idx] && s.stepsBeforeReveal!==true)) html += `<div class="hint">▸ ${steps.length-n} more to reveal · press → or Next</div>`;
+  html += notesHTML(s);
+  return `<section class="slide ${s.type}${(all||st.revealed[idx])?' revealed':''}" data-idx="${idx}">${html}</section>`;
+}
+
+/* ---------- render ---------- */
+function render(scrollTop){
+  const s = slides[st.i];
+  $("#stage").innerHTML = slideHTML(s, st.i, false);
+  const sec = $("#stage .slide");
+  const ch = st.choice[st.i];
+  if (ch!=null){ const b=sec.querySelector(`.opt[data-k="${ch}"]`); if(b) b.classList.add("chosen"); }
+  sec.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>choose(+b.dataset.k)));
+  const rv = sec.querySelector(".reveal"); if (rv) rv.addEventListener("click", reveal);
+  sec.querySelectorAll(".ecgwrap, .phonowrap").forEach(w=>w.addEventListener("click",()=>zoom(w)));
+  const sb = sec.querySelector("#scorebox"); if (sb) sb.innerHTML = scoreText();
+  $("#count").textContent = `${st.i+1} / ${slides.length}`;
+  $("#progress").style.width = ((st.i+ (stepsOf(s)?st.step/(stepsOf(s)+1):0))/(slides.length-1)*100)+"%";
+  $("#prev").disabled = st.i===0 && st.step===0;
+  try { history.replaceState(null,"","#s="+(st.i+1)); } catch(e){} // sandboxed previews block this
+  if (scrollTop!==false) $("#main").scrollTop = 0; else { const s0=slides[st.i]; const opts=sec.querySelector(".opts"); if (s0.options && st.revealed[st.i] && st.step===0 && opts) { opts.scrollIntoView({behavior:"smooth",block:"start"}); } else { const fr=sec.querySelectorAll(".frag, .explain"); const last=[...fr].filter(x=>x.offsetParent!==null).pop(); if(last) last.scrollIntoView({behavior:"smooth",block:"nearest"}); } }
+  save();
+}
+function scoreText(){
+  let right=0, tried=0;
+  slides.forEach((s,i)=>{ if(s.type==="mcq" && st.choice[i]!=null){ tried++; if(st.choice[i]===s.answer) right++; }});
+  return tried?`<div class="card">Room score on MCQs: <b>${right} / ${mcqCount}</b>${tried<mcqCount?` <span class="muted">(${mcqCount-tried} not answered)</span>`:""}</div>`:"";
+}
+function choose(k){ if (st.revealed[st.i]) return; const s=slides[st.i]; if(!s.options||k>=s.options.length) return; st.choice[st.i]=k; render(false); }
+function reveal(){ const s=slides[st.i]; if(!s.options) return; st.revealed[st.i]=true; render(false); startTimer(); }
+function next(){
+  startTimer();
+  const s=slides[st.i], after = !!s.options && s.stepsBeforeReveal!==true;
+  if (st.step < stepsOf(s) && !(after && !st.revealed[st.i])) { st.step++; render(false); return; }
+  if (s.options && !st.revealed[st.i]) { reveal(); return; }
+  if (st.step < stepsOf(s)) { st.step++; render(false); return; }
+  if (st.i < slides.length-1){ st.i++; st.step=0; render(); }
+}
+function prev(){
+  if (st.step>0){ st.step--; render(false); return; }
+  if (st.i>0){ st.i--; st.step=stepsOf(slides[st.i]); render(); }
+}
+function go(i){ st.i=Math.max(0,Math.min(slides.length-1,i)); st.step=0; render(); }
+function resetSession(){ st.choice={}; st.revealed={}; st.timer={run:false,t0:0,acc:0}; try{ sessionStorage.removeItem("tt:"+S.meta.id); }catch(e){} tick(); go(0); }
+window.addEventListener("hashchange",()=>{ let n=NaN; try{ n=parseInt((location.hash.match(/s=(\d+)/)||[])[1]||"",10); }catch(e){} if(!isNaN(n) && n-1!==st.i && n>=1 && n<=slides.length) go(n-1); });
+
+/* ---------- zoom ---------- */
+function zoom(w){ const z=document.createElement("div"); z.className="zoom"; z.innerHTML=w.innerHTML; z.addEventListener("click",()=>z.remove()); document.body.appendChild(z); }
+
+/* ---------- timer ---------- */
+const TOTAL = (S.meta.minutes||15)*60;
+function elapsed(){ return Math.floor((st.timer.acc + (st.timer.run? (Date.now()-st.timer.t0):0))/1000); }
+function startTimer(){ if(!st.timer.run && st.i>=0){ st.timer.run=true; st.timer.t0=Date.now(); } }
+function tick(){
+  const e=elapsed(), m=String(Math.floor(e/60)).padStart(2,"0"), sec=String(e%60).padStart(2,"0");
+  const el=$("#timer"); el.textContent=`⏱ ${m}:${sec} / ${S.meta.minutes||15}:00`;
+  el.classList.toggle("over", e>TOTAL); el.classList.toggle("near", e>TOTAL-120 && e<=TOTAL);
+}
+$("#timer").addEventListener("click",()=>{ if(st.timer.run){ st.timer.acc+=Date.now()-st.timer.t0; st.timer.run=false; } else startTimer(); tick(); });
+$("#timer").addEventListener("dblclick",()=>{ st.timer={run:false,t0:0,acc:0}; tick(); save(); });
+setInterval(tick, 500); tick();
+
+/* ---------- theme, notes, fullscreen, print ---------- */
+function setTheme(t){ document.documentElement.setAttribute("data-theme",t); try{localStorage.setItem("tt:theme",t);}catch(e){} }
+let theme; try{ theme=localStorage.getItem("tt:theme"); }catch(e){}
+let darkPref=false; try{ darkPref=matchMedia("(prefers-color-scheme: dark)").matches; }catch(e){}
+setTheme(theme || (darkPref?"dark":"light"));
+$("#themeBtn").addEventListener("click",()=>setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark"));
+$("#notesBtn").addEventListener("click",()=>document.body.classList.toggle("show-notes"));
+if (!document.fullscreenEnabled) $("#fsBtn").style.display="none"; // e.g. app previews and iframes
+$("#fsBtn").addEventListener("click",()=>{ try { const r = document.fullscreenElement ? document.exitFullscreen() : (document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()); if (r && r.catch) r.catch(()=>{}); } catch(e){} });
+let scale=1; const setScale=v=>{scale=Math.max(.7,Math.min(1.6,v));document.documentElement.style.setProperty("--scale",scale);};
+function buildPrint(){ $("#printall").innerHTML = slides.map((s,i)=>slideHTML(s,i,true)).join(""); $("#printall").querySelectorAll("details").forEach(d=>d.open=true); }
+window.addEventListener("beforeprint", buildPrint);
+$("#prev").addEventListener("click",prev); $("#next").addEventListener("click",next);
+
+document.addEventListener("keydown",e=>{
+  if (e.metaKey||e.ctrlKey||e.altKey) return;
+  const z=document.querySelector(".zoom"); if(z && (e.key==="Escape"||e.key===" ")){ z.remove(); e.preventDefault(); return; }
+  const k=e.key;
+  if (k==="ArrowRight"||k===" "||k==="PageDown"||k==="Enter"){ e.preventDefault(); next(); }
+  else if (k==="ArrowLeft"||k==="PageUp"||k==="Backspace"){ e.preventDefault(); prev(); }
+  else if (k==="Home") go(0); else if (k==="End") go(slides.length-1);
+  else if (k==="0") resetSession();
+  else if (/^[a-hA-H]$/.test(k) && slides[st.i].options && LET.indexOf(k.toUpperCase())<slides[st.i].options.length){ choose(LET.indexOf(k.toUpperCase())); }
+  else if (/^[1-8]$/.test(k) && slides[st.i].options){ choose(+k-1); }
+  else if (k==="r"||k==="R") reveal();
+  else if (k==="n"||k==="N") document.body.classList.toggle("show-notes");
+  else if (k==="t"||k==="T") $("#themeBtn").click();
+  else if (k==="f"||k==="F") $("#fsBtn").click();
+  else if (k==="+"||k==="=") setScale(scale+.1); else if (k==="-"||k==="_") setScale(scale-.1);
+  else if (k==="p"||k==="P"){ buildPrint(); try { window.print(); } catch(e){} }
+});
+let tx=null, ty=null;
+document.addEventListener("touchstart",e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+document.addEventListener("touchend",e=>{ if(tx==null) return; const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5 && !document.querySelector(".zoom")){ dx<0?next():prev(); } tx=null; });
+render();
+})();
+</script>
+</body>
+</html>

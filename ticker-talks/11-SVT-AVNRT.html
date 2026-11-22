@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SVT: AVNRT</title>
+<!--
+  TICKER TALKS ENGINE v1.0
+  Single self-contained file. No internet needed. Open in any modern browser.
+  To make a new session: copy this file and edit ONLY the SESSION object in the
+  <script id="session"> block near the bottom. The engine below it never changes.
+
+  Presenter keys:  → / Space next   ← back   A–E pick an option   R reveal
+                   N presenter notes   T light/dark   F fullscreen   + / − text size
+                   P print handout (every step revealed)   Home first slide
+                   0 reset (clears answers, score and timer for a fresh audience)
+  On a phone/tablet: swipe left/right, or use the buttons at the bottom.
+-->
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface2:#efeee8; --ink:#1b1d22; --muted:#5b606b;
+  --line:#d9d7cf; --accent:#b4232f; --accent-ink:#ffffff; --accent-soft:#f6dfe1;
+  --ok:#1f7a4d; --ok-soft:#dcf1e5; --bad:#a8322a; --bad-soft:#f8e1de; --warn:#8a5a00; --warn-soft:#fbefd4;
+  --info:#24527a; --info-soft:#e0ebf5;
+  --ecg-bg:#fff7f7; --ecg-minor:#f3c9cc; --ecg-major:#e38f96; --ecg-trace:#111;
+  --scale:1;
+}
+:root[data-theme="dark"]{
+  --bg:#121417; --surface:#1b1e23; --surface2:#23272e; --ink:#eef0f3; --muted:#a3a9b4;
+  --line:#343a43; --accent:#ff5d68; --accent-ink:#1a0a0c; --accent-soft:#3a1c20;
+  --ok:#5fd39a; --ok-soft:#163327; --bad:#ff8a7f; --bad-soft:#3a1d1a; --warn:#f3c061; --warn-soft:#382b10;
+  --info:#8cc2f0; --info-soft:#17283a;
+  --ecg-bg:#14171b; --ecg-minor:#2b2226; --ecg-major:#5a3238; --ecg-trace:#9ff5c4;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:calc(clamp(16px,0.9vw + 9px,24px) * var(--scale));line-height:1.45;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+/* top bar */
+.bar{position:fixed;inset:0 0 auto 0;height:3.0em;display:flex;align-items:center;gap:.6em;padding:0 1em;
+  background:var(--surface);border-bottom:1px solid var(--line);z-index:5;font-size:.62em}
+.brand{font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.brand b{color:var(--accent)}
+.bar .title{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.chip{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:.25em .8em;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--muted)}
+.timer.over{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.timer.near{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.progress{position:fixed;top:3.0em;left:0;height:4px;background:var(--accent);transition:width .25s;z-index:6;font-size:.62em}
+/* stage */
+main{position:absolute;inset:0;padding:calc(3.0em*.62 + 18px) 0 calc(3.2em*.62 + 16px);overflow-y:auto}
+.slide{max-width:1180px;margin:0 auto;padding:0 16px 1em;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.kicker{display:inline-flex;gap:.5em;align-items:center;font-size:.7em;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin:.4em 0 .2em}
+.kicker .clock{font-variant-numeric:tabular-nums;background:var(--accent);color:var(--accent-ink);padding:.05em .55em;border-radius:6px;letter-spacing:.02em}
+h1{font-size:2.1em;line-height:1.1;margin:.2em 0 .3em;letter-spacing:-.01em}
+h2{font-size:1.45em;line-height:1.15;margin:.15em 0 .5em;letter-spacing:-.005em}
+h3{font-size:1.05em;margin:.8em 0 .3em}
+p{margin:.4em 0}
+ul,ol{margin:.3em 0 .5em;padding-left:1.3em}
+li{margin:.18em 0}
+.muted{color:var(--muted)}
+.small{font-size:.8em}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.8em 1em;margin:.6em 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.vitals{display:flex;flex-wrap:wrap;gap:.5em;margin:.5em 0}
+.vital{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.3em .7em;min-width:6.2em}
+.vital .k{font-size:.62em;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.vital .v{font-size:1.15em;font-weight:700;font-variant-numeric:tabular-nums}
+.vital.flag{border-color:var(--bad);background:var(--bad-soft)}
+.vital.flag .v{color:var(--bad)}
+.frag{margin:.5em 0;padding:.55em .9em;border-left:4px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;animation:fade .25s ease}
+.frag,.explain{scroll-margin-bottom:28px}
+.frag.pearl{border-left-color:var(--info);background:var(--info-soft)}
+.frag.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.ask{font-size:1.1em;font-weight:650;margin:.6em 0;padding:.6em .9em;border:2px dashed var(--accent);border-radius:12px;background:var(--accent-soft)}
+.ask::before{content:"🗣 Ask the room: ";color:var(--accent)}
+.hint{font-size:.7em;color:var(--muted);margin-top:.8em}
+/* options */
+.opts{display:grid;gap:.5em;margin:.7em 0}
+.opt{display:flex;gap:.7em;align-items:flex-start;text-align:left;width:100%;padding:.6em .8em;border-radius:12px;border:2px solid var(--line);background:var(--surface);cursor:pointer}
+.opt:hover{border-color:var(--muted)}
+.opt .L{flex:0 0 auto;width:1.8em;height:1.8em;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--surface2);border:1px solid var(--line)}
+.opt .body{flex:1}
+.opt .fb{display:none;font-size:.85em;margin-top:.35em}
+.opt.chosen{border-color:var(--info);box-shadow:0 0 0 3px var(--info-soft)}
+.opt.chosen .L{background:var(--info);color:var(--surface);border-color:var(--info)}
+.revealed .opt{cursor:default}
+.revealed .opt .fb{display:block}
+.revealed .opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.revealed .opt.right .L{background:var(--ok);color:var(--surface);border-color:var(--ok)}
+.revealed .opt.wrong{opacity:.8}
+.revealed .opt.wrong.chosen{border-color:var(--bad);background:var(--bad-soft);opacity:1}
+.revealed .opt.wrong.chosen .L{background:var(--bad);border-color:var(--bad)}
+.tag{display:inline-block;font-size:.7em;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:.05em .5em;border-radius:6px;margin-right:.4em}
+.tag.ok{background:var(--ok);color:var(--surface)}
+.tag.no{background:var(--bad);color:var(--surface)}
+.explain{display:none}
+.revealed .explain{display:block;animation:fade .25s ease}
+.btnrow{display:flex;gap:.5em;flex-wrap:wrap;margin:.6em 0}
+.btn{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:.45em 1em;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.revealed .btn.reveal{display:none}
+/* title slide */
+.hero{min-height:58vh;display:flex;flex-direction:column;justify-content:center}
+.hero .series{font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-size:.8em}
+.hero .sub{font-size:1.15em;color:var(--muted);max-width:44em}
+.meta{display:flex;flex-wrap:wrap;gap:.5em;margin-top:1em;font-size:.75em}
+.meta span{border:1px solid var(--line);border-radius:999px;padding:.2em .8em;background:var(--surface)}
+.pulse{display:block;width:min(520px,90%);height:60px;margin:.4em 0 .6em}
+.pulse path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round;stroke-dasharray:900;stroke-dashoffset:900;animation:draw 2.2s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+/* mapping */
+.epa{display:flex;gap:.6em;align-items:baseline;margin:.35em 0}
+.epa code{flex:0 0 auto;font:700 .72em ui-monospace,Menlo,Consolas,monospace;background:var(--info-soft);color:var(--info);padding:.15em .5em;border-radius:6px}
+.role{font-weight:700;color:var(--info)}
+/* ECG */
+.ecg{width:100%;max-height:56vh;border:1px solid var(--line);border-radius:10px;background:var(--ecg-bg);cursor:zoom-in;display:block}
+.ecg .minor{stroke:var(--ecg-minor);stroke-width:.5}
+.ecg .major{stroke:var(--ecg-major);stroke-width:1}
+.ecg .trace{fill:none;stroke:var(--ecg-trace);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ecg text{fill:var(--ecg-trace);font:700 15px system-ui,sans-serif}
+.ecg .hl{fill:var(--accent);opacity:.12}
+.phono{width:100%;display:block;background:var(--surface);border:1px solid var(--line);border-radius:10px;cursor:zoom-in;max-height:40vh}
+.phono .base{stroke:var(--line);stroke-width:1.5}
+.phono .snd{stroke:var(--ink);stroke-width:2.2}
+.phono .mur{stroke:var(--accent);stroke-width:1.6;opacity:.85}
+.phono .brk{fill:none;stroke:var(--muted);stroke-width:1.5}
+.phono text{fill:var(--muted);font:600 15px system-ui,sans-serif;text-anchor:middle}
+.phono .sl{fill:var(--ink);font-weight:800}
+.phono .ml{fill:var(--accent);font-weight:700}
+.zoom .phono{background:var(--surface)}
+details.objs summary{cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;gap:.5em}
+details.objs summary::-webkit-details-marker{display:none}
+details.objs summary::before{content:"▸";color:var(--accent);transition:transform .15s}
+details.objs[open] summary::before{transform:rotate(90deg)}
+details.objs[open] summary{margin-bottom:.4em}
+.ecgcap{font-size:.72em;color:var(--muted);margin:.25em 0 .4em}
+.zoom{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:12px;cursor:zoom-out}
+.zoom svg{width:100%;max-height:100%;cursor:zoom-out}
+@media (max-width:760px){.zoom{overflow:auto;justify-content:flex-start}.zoom svg{width:auto;height:auto;min-width:980px;max-height:none}}
+/* notes + nav */
+.notes{display:none;margin:1em 0;padding:.7em 1em;border-radius:12px;background:var(--warn-soft);border:1px solid var(--warn);font-size:.8em}
+.notes::before{content:"Presenter notes";display:block;font-weight:800;text-transform:uppercase;font-size:.75em;letter-spacing:.08em;color:var(--warn);margin-bottom:.2em}
+body.show-notes .notes{display:block}
+.nav{position:fixed;inset:auto 0 0 0;height:3.2em;display:flex;align-items:center;justify-content:space-between;gap:.5em;padding:0 1em;
+  background:var(--surface);border-top:1px solid var(--line);z-index:5;font-size:.62em}
+.nav .count{color:var(--muted);font-variant-numeric:tabular-nums}
+.nav .btn{padding:.5em 1.3em}
+.score{font-weight:700}
+table.t{border-collapse:collapse;width:100%;font-size:.85em;margin:.4em 0}
+table.t th,table.t td{border-bottom:1px solid var(--line);padding:.35em .5em;text-align:left;vertical-align:top}
+table.t th{color:var(--muted);font-weight:700;font-size:.85em;text-transform:uppercase;letter-spacing:.04em}
+.refs li{font-size:.72em;margin:.35em 0}
+.disclaimer{font-size:.68em;color:var(--muted);border-top:1px solid var(--line);margin-top:1em;padding-top:.5em}
+#printall{display:none}
+@media (max-width:500px){.vital .k,.tag{font-size:11px}}
+@media print{
+  .bar,.progress,.nav,#stage,.zoom{display:none!important}
+  #printall{display:block}
+  main{position:static;padding:0;overflow:visible}
+  body{font-size:11pt;background:#fff;color:#000}
+  .slide{page-break-inside:avoid;break-inside:avoid;border-bottom:1px solid #ccc;padding:10pt 0;animation:none;max-width:none}
+  .frag,.explain,.slide,.pulse path{animation:none!important;opacity:1!important}
+  .notes{display:block}
+  .opt .fb,.explain{display:block}
+  .hero{min-height:0}
+  .ecg{cursor:default}
+}
+</style>
+</head>
+<body>
+<div class="bar">
+  <a class="brand" href="./" title="All Ticker Talks" style="text-decoration:none;color:inherit">Ticker<b>Talks</b></a>
+  <span class="title" id="bartitle"></span>
+  <button class="chip timer" id="timer" title="Start / pause timer (click). Double-click to reset.">⏱ 00:00</button>
+  <button class="chip" id="notesBtn" title="Presenter notes (N)">Notes</button>
+  <button class="chip" id="themeBtn" title="Light / dark (T)">◐</button>
+  <button class="chip" id="fsBtn" title="Fullscreen (F)">⛶</button>
+</div>
+<div class="progress" id="progress"></div>
+<main id="main"><div id="stage"></div><div id="printall"></div></main>
+<div class="nav">
+  <button class="btn" id="prev">← Back</button>
+  <span class="count" id="count"></span>
+  <button class="btn primary" id="next">Next →</button>
+</div>
+
+<!-- ======================= SESSION CONTENT (edit this) ======================= -->
+<script id="session">
+window.SESSION = {
+meta: {
+  id: "11-svt-avnrt",
+  series: "Ticker Talks · CCU Teaching", number: "11",
+  title: "Pounding in the neck",
+  subtitle: "Regular narrow-complex tachycardia that turns out to be AVNRT: the modified Valsalva, adenosine done right, reading the response, and curing it.",
+  duration: "15 min", minutes: 15,
+  audience: "IM residents (PGY1–3), clerks", setting: "ED / CCU", updated: "Nov 2026",
+  disclaimer: "Teaching case. The patient is fictional. There is no Canadian SVT guideline, so this session follows ESC 2019 SVT and ACC/AHA/HRS 2015 SVT, with the 2025 AHA Adult Advanced Life Support guideline for unstable tachycardia. Check doses against local protocols. ECGs are schematic. Objectives are numbered as in the <i>Objectives of Training in the Specialty of Internal Medicine</i> (2011, v1.0)."
+},
+objectives: [
+  "Use the ECG to separate <b>AVNRT, AVRT and atrial tachycardia or flutter</b> in a regular narrow-complex tachycardia.",
+  "Perform the <b>modified Valsalva manoeuvre</b>, which works far better than the standard one.",
+  "Give <b>adenosine</b> safely and interpret what it shows.",
+  "Offer <b>catheter ablation</b> as first-line long-term therapy."
+],
+mappingTitle: "Internal medicine training objectives covered",
+mapping: [
+  { code: "ME 2.1.2.4", title: "Palpitations", how: "presentation" },
+  { code: "ME 5.1.5.5", title: "Diagnosing and managing life threatening cardiac arrhythmias", how: "SVT management" },
+  { code: "ME 5.1.6", title: "Electrocardiograms", how: "short-RP tachycardia, pseudo-r′, adenosine strip" },
+  { code: "ME 4.2.1", title: "Use of medications", how: "adenosine dosing, interactions" },
+  { code: "ME 4.3", title: "Ensure appropriate informed consent is obtained for therapies", how: "warning before adenosine; ablation risks" },
+  { code: "ME 6.2", title: "Demonstrate effective, appropriate, and timely consultation of another health professional as needed for optimal patient care", how: "EP referral" },
+  { code: "Communicator 3.1", title: "Deliver information to a patient and family, colleagues and other professionals in a humane manner and in such a way that it is understandable, encourages discussion and participation in decision-making", how: "ablation vs medication" }
+],
+canmeds: [
+  { role: "Communicator", point: "Warn before adenosine: \"For a few seconds you'll feel a sense of doom and chest pressure. It passes quickly.\" Patients who are warned tolerate it far better." },
+  { role: "Health Advocate", point: "Recurrent SVT in a young adult affects work, driving and pregnancy plans. Ablation is a one-time cure, so talk about access and wait times." },
+  { role: "Scholar", point: "REVERT was a simple, pragmatic RCT that changed ED practice worldwide. Good evidence doesn't need to be expensive." }
+],
+ecgs: {
+  svt: {
+    label: "Regular narrow-complex tachycardia at 186 bpm", hr: 186,
+    caption: "Regular narrow-complex tachycardia at 186 bpm. No visible P waves before the QRS. Look closely at V1 (a terminal \"pseudo-r′\") and the inferior leads (\"pseudo-S\"): retrograde P waves buried at the end of the QRS.",
+    rows: [["I","aVR","V1","V4"],["II","aVL","V2","V5"],["III","aVF","V3","V6"]], rhythm: "II",
+    leads: {
+      I:{r:6,s:1,t:1,p:0}, II:{r:10,s:4,t:1.2,p:0}, III:{r:5,s:4,t:0.6,p:0}, aVR:{r:2.5,s:7,t:-1,p:0}, aVL:{r:2,s:2,t:0.4,p:0}, aVF:{r:8,s:4,t:1,p:0},
+      V1:{r:3,s:7,rp:3,t:0.4,p:0}, V2:{r:4,s:11,t:1.2,p:0}, V3:{r:8,s:7,t:1.5,p:0}, V4:{r:12,s:4,t:1.5,p:0}, V5:{r:13,s:2,t:1.4,p:0}, V6:{r:11,s:1,t:1.2,p:0}
+    }
+  },
+  sinus: {
+    label: "Sinus rhythm after termination", hr: 76,
+    caption: "After adenosine: sinus rhythm. <b>Normal PR, no delta wave</b> (so there is no manifest accessory pathway). The pseudo-r′ in V1 has disappeared.",
+    rows: [["II","V1"]],
+    leads: { II:{r:10,s:1,t:1.5}, V1:{r:1.5,s:8,t:0.4} }
+  }
+},
+slides: [
+{ type: "title", notes: "<b>0:00–0:30.</b> Hook: one of the few cardiac conditions you can cure in an afternoon." },
+{ type: "objectives", notes: "<b>0:30–1:00.</b>" },
+
+{ type: "case", clock: "14:20", kicker: "Emergency department",
+  title: "\"It just switched on, like a light.\"",
+  html: "<p><b>Ms. C., 31</b>, a teacher. She had a sudden onset of rapid palpitations 40 minutes ago while bending to pick something up, with a <b>pounding sensation in her neck</b>. She has had similar brief episodes since her teens that stopped on their own. No chest pain, no syncope. Not pregnant.</p>",
+  vitals: [["HR","186 reg",1],["BP","118/76"],["RR","18"],["SpO₂","99%"]],
+  ecg: "svt",
+  steps: [
+    "<b>Neck:</b> regular, prominent <b>\"frog sign\"</b> (cannon a-waves). The atria are contracting against closed AV valves at the same time as the ventricles, which fits AVNRT.",
+    { style: "pearl", html: "<b>Regular narrow-complex tachycardia, find the P wave:</b> <b>none visible, or a pseudo-r′ in V1</b> (very short RP) suggests <b>typical AVNRT</b>, the most common type, especially in women. A <b>retrograde P in the ST segment</b> (RP >70 ms) suggests <b>orthodromic AVRT</b>. <b>Long RP</b> suggests atrial tachycardia, atypical AVNRT or PJRT. A <b>sawtooth at about 300</b> means flutter with 2:1 block (rate about 150)." }
+  ],
+  notes: "<b>1:00–3:00.</b> Click the ECG to enlarge it. Point to V1 and lead II." },
+
+{ type: "decision", title: "She is stable. First move?",
+  prompt: "Which is the best first intervention?",
+  options: [
+    { t: "Modified Valsalva manoeuvre", ok: true, fb: "Strain for 15 s (blow into a 10 mL syringe enough to move the plunger) semi-recumbent, then immediately lie flat with the legs raised to 45° for 15 s. <b>REVERT</b>: about <b>43%</b> return to sinus rhythm vs about 17% with the standard Valsalva. It's free and safe, and it avoids adenosine in many patients. Repeat it once if needed." },
+    { t: "Carotid sinus massage on both sides together", fb: "Never massage both sides at once. Even unilateral massage is avoided in older patients or those with bruits (stroke risk)." },
+    { t: "IV adenosine 6 mg before any vagal manoeuvre", fb: "Adenosine is the next step, but vagal manoeuvres come first in stable patients (ESC 2019: class I)." },
+    { t: "Synchronized cardioversion at 50–100 J under sedation", fb: "Reserved for hemodynamic instability, or failure of vagal manoeuvres and drugs." }
+  ],
+  explain: "<b>Unstable</b> (hypotension, altered consciousness, ischemic chest pain, acute HF)? Go straight to <b>synchronized cardioversion</b> with sedation.",
+  notes: "<b>3:00–4:45.</b> Demonstrate the leg raise. Some groups practise it on a volunteer." },
+
+{ type: "decision", title: "Valsalva failed twice. Adenosine.",
+  prompt: "Which adenosine order is correct?",
+  options: [
+    { t: "Adenosine 6 mg rapid push via a hand vein, no flush", fb: "Adenosine's half-life is under 10 seconds. A push through a distal vein without a flush may never reach the AV node at an effective concentration." },
+    { t: "Diltiazem 0.25 mg/kg IV over 2 minutes", fb: "A reasonable alternative (ESC IIa), especially if adenosine is contraindicated, but it can drop BP. Adenosine is the first-line drug for a stable patient with normal LV function." },
+    { t: "IV amiodarone 150 mg over 10 minutes", fb: "Not a first-line agent for AV-node-dependent SVT." },
+    { t: "6 mg antecubital push and flush, on a strip", ok: true, fb: "Push 6 mg rapidly into an antecubital (or larger) vein, followed immediately by a 20 mL saline flush, with a continuous 12-lead rhythm strip. Then 12 mg if needed. Use the two-syringe (or three-way tap) technique for a <b>rapid push and flush</b>, and <b>record the response</b>. It's diagnostic even if it doesn't convert. Warn her about transient chest pressure, flushing and a sense of doom. ESC allows escalation to 18 mg." }
+  ],
+  explain: "<b>Adjust the dose:</b> use <b>3 mg</b> in heart transplant recipients (denervated, hypersensitive), patients on <b>dipyridamole</b>, or with a central line. Expect <b>less effect</b> with caffeine or theophylline. Carbamazepine increases heart block, so reduce the dose. <b>Never give it in pre-excited AF</b> (irregular, wide, varying QRS): it can precipitate VF (session 10). Use caution in severe asthma or bronchospasm, where <b>IV verapamil or diltiazem</b> are alternatives if LV function is normal.",
+  notes: "<b>4:45–6:30.</b>" },
+
+{ type: "decision", title: "Reading the adenosine strip",
+  html: "<p>Adenosine 6 mg: the tachycardia <b>stops abruptly</b>, with a pause, then sinus rhythm.</p>",
+  ecg: "sinus",
+  prompt: "What does this tell you?",
+  options: [
+    { t: "Atrial flutter with 2:1 block, now terminated", fb: "In flutter, adenosine transiently blocks the AV node and <b>unmasks the flutter waves</b>. The atrial rhythm continues, so the tachycardia doesn't terminate." },
+    { t: "Ventricular tachycardia from the septum", fb: "This was narrow-complex. (Some VTs respond to adenosine, but that is a separate topic.)" },
+    { t: "AV-node re-entry, most likely AVNRT", ok: true, fb: "Abrupt termination means the AV node is part of the circuit (AVNRT or AVRT). No delta wave in sinus rhythm, the pseudo-r′ that disappears after conversion, and the frog sign all point to <b>typical AVNRT</b>." },
+    { t: "Sinus tachycardia that has now settled", fb: "Sinus tachycardia slows gradually and then speeds up again. It doesn't stop abruptly at 186." }
+  ],
+  explain: "<b>Adenosine responses:</b> <b>terminates</b>: AVNRT or AVRT (occasionally some atrial tachycardias). <b>Transient slowing revealing P or flutter waves</b>: atrial flutter or atrial tachycardia. <b>No effect</b>: inadequate delivery, or VT. Always record the strip. A <b>concealed accessory pathway</b> (orthodromic AVRT) can't be excluded on the surface ECG. The EP study sorts it out at ablation.",
+  notes: "<b>6:30–8:00.</b>" },
+
+{ type: "decision", kicker: "Before discharge", title: "She has had 5 episodes this year",
+  prompt: "Best long-term plan?",
+  options: [
+    { t: "Daily metoprolol, titrated to symptoms", fb: "An option if she prefers medication or ablation isn't available, but it is only partly effective and has side effects." },
+    { t: "Refer for catheter ablation", ok: true, fb: "ESC 2019 class I for recurrent symptomatic AVNRT: about <b>95–97% success</b>, low recurrence, and a risk of AV block needing a pacemaker of about <b>1% or less</b>. Slow-pathway modification is a cure that removes the need for daily medication." },
+    { t: "Oral amiodarone 200 mg daily", fb: "Toxicity outweighs the benefit for a benign, curable arrhythmia." },
+    { t: "No follow-up; teach Valsalva only", fb: "Reasonable for rare, brief, well-tolerated episodes. With 5 episodes needing ED care this year, offer ablation." }
+  ],
+  explain: "<b>Pill-in-the-pocket</b> (single-dose diltiazem plus propranolol) is an option for infrequent, prolonged episodes. <b>Pregnancy planning:</b> AVNRT can worsen in pregnancy, and adenosine is safe if needed. Ablation before pregnancy is attractive.",
+  notes: "<b>8:00–9:30.</b> If asked: nasal etripamil for self-treatment is approved in the US. Check its Canadian status before recommending it." },
+
+{ type: "mcqintro", notes: "<b>9:30.</b>" },
+
+{ type: "mcq",
+  stem: "<p>A 52-year-old man who received a heart transplant 3 years ago presents with a regular narrow-complex tachycardia at 170 bpm. BP 124/80. He has a PICC line in place. Vagal manoeuvres fail.</p><p><b>What is the most appropriate next step?</b></p>",
+  options: ["Adenosine 6 mg rapid push via the PICC line", "Adenosine 12 mg rapid push via an antecubital vein", "Adenosine 3 mg, with pacing available", "Synchronized cardioversion at 100 J", "IV metoprolol 5 mg"],
+  answer: 2,
+  explain: "The <b>denervated transplanted heart is hypersensitive</b> to adenosine, and a central line delivers it faster. Both mean prolonged asystole is possible, so reduce the initial dose to <b>3 mg</b> with pacing available (ACC/AHA/HRS 2015). Some centres avoid it entirely early after transplant. 6 mg via the PICC and 12 mg are too much. He is stable, so cardioversion isn't the first step. Beta-blockers are a second-line option and work less predictably in a denervated heart.",
+  ref: "Page RL et al. ACC/AHA/HRS 2015; Brugada J et al. ESC SVT 2019" },
+
+{ type: "mcq",
+  stem: "<p>A 70-year-old man on flecainide for paroxysmal AF has a regular narrow-complex tachycardia at <b>125 bpm</b>. During 12 mg of adenosine, the ventricular rate slows briefly, revealing regular atrial activity at <b>250/min</b> with no isoelectric baseline in II, III and aVF. Then the tachycardia resumes.</p><p><b>What is the diagnosis?</b></p>",
+  options: ["AV nodal re-entrant tachycardia", "Orthodromic AV re-entrant tachycardia", "Sinus tachycardia", "Junctional ectopic tachycardia", "Atrial flutter with 2:1 conduction"],
+  answer: 4,
+  explain: "Adenosine blocks the AV node transiently but doesn't affect the flutter circuit, so the <b>flutter waves are unmasked</b> and the tachycardia resumes. <b>Flecainide slows the flutter circuit</b> (here 250/min instead of about 300), so 2:1 conduction gives 125, not 150. Watch for 1:1 conduction, which is why flecainide is given with an AV-nodal blocker. AVNRT and AVRT would terminate. Sinus and junctional rhythms don't produce continuous atrial waves at 250.",
+  ref: "Brugada J et al. ESC SVT 2019" },
+
+{ type: "mcq",
+  stem: "<p>A 30-year-old woman has a stable regular narrow-complex tachycardia at 190 bpm. A standard Valsalva manoeuvre, done sitting, failed once.</p><p><b>What is the most effective next step?</b></p>",
+  options: ["Repeat the standard Valsalva manoeuvre", "Modified Valsalva with a leg raise", "Ice-water facial immersion for 30 seconds", "Carotid sinus massage on the right side", "Adenosine 6 mg rapid IV push"],
+  answer: 1,
+  explain: "In <b>REVERT</b>, the modified Valsalva (15-second strain semi-recumbent, then lie flat with the legs raised to 45° for 15 seconds) converted about <b>43%</b> vs about 17% for standard Valsalva. Repeating a failed standard manoeuvre is less effective. Facial immersion and carotid massage work less well and carry more risk. Adenosine is next if the modified Valsalva fails.",
+  ref: "Appelboam A et al. Lancet 2015 (REVERT); ESC SVT 2019" },
+
+{ type: "mcq",
+  stem: "<p>A 24-year-old man has a regular narrow-complex tachycardia at 200 bpm. A distinct retrograde P wave is seen in the <b>ST segment</b>, with an RP interval of <b>120 ms</b>. His sinus ECG is normal, with no delta wave. Adenosine terminates the tachycardia.</p><p><b>What is the most likely mechanism?</b></p>",
+  options: ["Orthodromic AVRT via a concealed pathway", "Typical (slow–fast) AV nodal re-entry", "Focal atrial tachycardia", "Atrial flutter with 2:1 block", "Permanent junctional reciprocating tachycardia"],
+  answer: 0,
+  explain: "An RP of <b>more than 70 ms</b> with the P wave in the ST segment means the impulse travels down the AV node and back up a separate pathway: <b>orthodromic AVRT</b>. A normal sinus ECG means the pathway is <b>concealed</b> (it conducts only retrogradely). Typical AVNRT has a very short RP (pseudo-r′). Focal AT doesn't depend on the AV node, so adenosine usually doesn't terminate it. PJRT is a long-RP tachycardia (RP longer than PR).",
+  ref: "Brugada J et al. ESC SVT 2019" },
+
+{ type: "summary",
+  pearls: [
+    "<b>Find the P wave:</b> none or a pseudo-r′ means AVNRT. P in the ST segment means AVRT. Long RP means AT, PJRT or atypical AVNRT. Rate about 150 means think flutter.",
+    "<b>Modified Valsalva</b> (strain, then flat with legs up) first: about 43% success.",
+    "<b>Adenosine 6 mg, then 12 mg, as a rapid push with a flush, recorded on a strip.</b> Use 3 mg for transplant, dipyridamole or a central line.",
+    "Termination means the AV node is in the circuit. Unmasked waves mean an atrial rhythm.",
+    "<b>Ablation cures AVNRT</b> (about 95–97% success, ≤1% AV block risk). Offer it early."
+  ],
+  notes: "<b>14:30.</b>" },
+{ type: "refs" }
+],
+references: [
+  "Brugada J, Katritsis DG, Arbelo E, et al. 2019 ESC Guidelines for the management of patients with supraventricular tachycardia. <i>Eur Heart J</i>. 2020;41:655–720.",
+  "Page RL, Joglar JA, Caldwell MA, et al. 2015 ACC/AHA/HRS Guideline for the Management of Adult Patients With Supraventricular Tachycardia. <i>Circulation</i>. 2016;133:e506–e574.",
+  "Appelboam A, Reuben A, Mann C, et al. Postural modification to the standard Valsalva manoeuvre for emergency treatment of supraventricular tachycardias (REVERT). <i>Lancet</i>. 2015;386:1747–1753.",
+  "Wigginton JG, Agarwal S, Bartos JA, et al. Part 9: Adult Advanced Life Support: 2025 American Heart Association Guidelines for Cardiopulmonary Resuscitation and Emergency Cardiovascular Care. <i>Circulation</i>. 2025;152(16 Suppl 2):S538–S577.",
+  "Royal College of Physicians and Surgeons of Canada. <i>Objectives of Training in the Specialty of Internal Medicine</i>, 2011 Version 1.0. Copyright © 2011 The Royal College of Physicians and Surgeons of Canada. Referenced and produced with permission."
+]
+};
+
+</script>
+<!-- ======================= ENGINE (do not edit) ============================== -->
+<script>
+(function(){
+"use strict";
+const S = window.SESSION;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LET = "ABCDEFGH";
+document.title = S.meta.title + " · Ticker Talks";
+$("#bartitle").textContent = S.meta.title;
+
+/* ---------- build the slide list ---------- */
+const slides = S.slides.slice();
+let mcqCount = slides.filter(s => s.type === "mcq").length;
+let mcqNo = 0;
+slides.forEach(s => { if (s.type === "mcq") s._n = ++mcqNo; });
+
+/* ---------- state ---------- */
+const st = { i:0, step:0, choice:{}, revealed:{}, timer:{run:false, t0:0, acc:0} };
+try { const saved = JSON.parse(sessionStorage.getItem("tt:"+S.meta.id) || "null"); if (saved) Object.assign(st, saved, {timer:{run:false,t0:0,acc:saved.timer?saved.timer.acc:0}}); } catch(e){}
+let h=NaN; try { h = parseInt((location.hash.match(/s=(\d+)/)||[])[1]||"",10); } catch(e){}
+if (!isNaN(h) && h>=1 && h<=slides.length) { if (h-1 !== st.i) { st.i = h-1; st.step = 0; } }
+function save(){ try { sessionStorage.setItem("tt:"+S.meta.id, JSON.stringify({i:st.i,step:st.step,choice:st.choice,revealed:st.revealed,timer:{acc:elapsed()}})); } catch(e){} }
+
+/* ---------- ECG renderer ----------
+   Leads are drawn from simple parameters (all in mm at 10 mm/mV):
+   {r: R height, q: Q depth, s: S depth, st: ST offset at J point (+ elevation / − depression),
+    t: T amplitude (negative = inverted), p: P amplitude}
+   A lead may be given as a string to copy another lead's shape. */
+function beatPts(L){
+  const pts=[], p=L.p==null?1.2:L.p, q=L.q||0, r=L.r==null?8:L.r, s=L.s||0, j=L.st||0, t=L.t==null?2.5:L.t;
+  pts.push([0,0]);
+  for(let k=0;k<=10;k++){const u=k/10;pts.push([0.4+2.4*u,p*Math.sin(Math.PI*u)]);}
+  pts.push([4.2,0]); pts.push([4.7,-q]); pts.push([5.5,r]); pts.push([6.3,-s]); if (L.rp) pts.push([6.75,L.rp]);
+  pts.push([7.0,j]);
+  // ST segment holds near the J-point level, then returns to baseline as the T wave ends
+  for(let k=1;k<=28;k++){const u=k/28; const base = u<0.45 ? j : j*(1-Math.pow((u-0.45)/0.55,1.4));
+    const bump=t*Math.pow(Math.sin(Math.PI*Math.max(0,(u-0.12)/0.88)),1.4);
+    pts.push([7.0+8.5*u, base+bump]);}
+  // w = QRS width multiplier (1 = narrow ~40 ms; 3.5–4 = wide ~140–160 ms)
+  const w=L.w||1; if (w!==1) return pts.map(([x,y])=>[x<=4.2?x:(x<=7.0?4.2+(x-4.2)*w:x+2.8*(w-1)),y]);
+  return pts;
+}
+function renderECG(spec){
+  const MM=4, rowH=spec.rowH||36, rows=spec.rows, W=spec.width||250;
+  const rhythm = spec.rhythm ? 1 : 0;
+  const H=rowH*(rows.length+rhythm);
+  const hr=spec.hr||75, rr=25*60/hr;
+  let g=`<svg class="ecg" viewBox="0 0 ${W*MM} ${H*MM}" role="img" aria-label="${esc(spec.label||'ECG')}" xmlns="http://www.w3.org/2000/svg">`;
+  let minor="", major="";
+  for(let x=0;x<=W;x++){ (x%5?(minor+=`M${x*MM} 0V${H*MM}`):(major+=`M${x*MM} 0V${H*MM}`)); }
+  for(let y=0;y<=H;y++){ (y%5?(minor+=`M0 ${y*MM}H${W*MM}`):(major+=`M0 ${y*MM}H${W*MM}`)); }
+  g+=`<path class="minor" d="${minor}"/><path class="major" d="${major}"/>`;
+  const leadOf = n => { let L=spec.leads[n]; let guard=0; while(typeof L==="string" && guard++<5) L=spec.leads[L]; return L||{r:0,t:0,p:0}; };
+  const frac = v => v - Math.floor(v);
+  const irr = spec.af && !spec.regular; const rrMin = irr ? rr*0.75 : rr;
+  const wMax = Math.max(1,...Object.values(spec.leads).map(L=>(L&&L.w)||1)); const sc = Math.max(0.35, Math.min(1, (rrMin-(4.6+2.8*wMax))/8.5));   // shorten ST-T at fast rates
+  const drawStrip = (name, x0, y0, w, label, offset) => {
+    const L0=leadOf(name), L=spec.af?Object.assign({},L0,{p:0}):L0;
+    const jx=4.2+2.8*(L.w||1); const b=beatPts(L).map(([px,py])=>[px<=jx?px:jx+(px-jx)*sc, py]); let d="";
+    const seed=(name.length*7+(x0|0))%13;
+    const rrAt = i => irr ? rr*(0.75+0.75*frac(Math.sin((i+seed+1)*12.9898)*43758.5453)) : rr;
+    const fib = X => spec.af ? (0.35*Math.sin(X*2.1)+0.25*Math.sin(X*3.7+1)) : 0;
+    let x=x0, base=y0+rowH*0.62;
+    const seg=(a,e)=>{ if(spec.af){ for(let X=a;X<=e;X+=0.5) d+=`L${(X*MM).toFixed(1)} ${((base-fib(X))*MM).toFixed(1)}`; } else d+=`L${(e*MM).toFixed(1)} ${(base*MM).toFixed(1)}`; };
+    // calibration pulse at strip start
+    if (x0===0){ d+=`M${x*MM} ${base*MM}h${1*MM}v${-10*MM}h${5*MM}v${10*MM}h${1*MM}`; x+=8; } else { d+=`M${x*MM} ${base*MM}`; }
+    let start=x+(offset||1.5), k=0;
+    seg(x,start);
+    while(start < x0+w-1){
+      let lastX=start;
+      if (start+b[b.length-1][0] > x0+w-0.5) { seg(start, x0+w-0.5); break; } // never draw a clipped beat
+      for(const [px,py] of b){ const X=start+px; if (X>x0+w-0.5) break; d+=`L${(X*MM).toFixed(1)} ${((base-py)*MM).toFixed(1)}`; lastX=X; }
+      const next=start+rrAt(k++); const endB=Math.min(next, x0+w-0.5);
+      if (lastX<endB) seg(lastX,endB);
+      start=next;
+    }
+    if (spec.highlight && spec.highlight.includes(name)) g+=`<rect class="hl" x="${x0*MM}" y="${y0*MM}" width="${w*MM}" height="${rowH*MM}"/>`;
+    g+=`<path class="trace" d="${d}"/>`;
+    g+=`<text x="${(x0+ (x0===0?9:1.5))*MM}" y="${(y0+5)*MM}">${esc(label||name)}</text>`;
+  };
+  rows.forEach((row,ri)=>{ const cw=W/row.length; row.forEach((name,ci)=>drawStrip(name, ci*cw, ri*rowH, cw, (spec.labels||{})[name], ci===0?1.5:(ci*1.3)%rr)); });
+  if (rhythm) drawStrip(spec.rhythm, 0, rows.length*rowH, W, (spec.labels||{})[spec.rhythm]||spec.rhythm+" (rhythm)");
+  g+=`</svg>`;
+  return g;
+}
+/* ---------- Phonocardiogram (murmur timing diagram) ----------
+   spec: { cycles:2, label, caption,
+           sounds:[{type:"S1"|"S2"|"A2"|"P2"|"S3"|"S4"|"OS"|"click"|"EC", at:0–1 (optional), amp:0–1.5, label}],
+           murmurs:[{from:0–1, to:0–1, shape:"diamond"|"plateau"|"decrescendo"|"crescendo"|"rumble", peak:0–1, amp:0–1, label}] }
+   One cardiac cycle runs 0→1: S1 at 0.02, S2 at 0.36 (systole 0.02–0.36, diastole 0.36–1). */
+const SND_AT={S1:0.02,S2:0.36,A2:0.36,P2:0.41,OS:0.45,S3:0.53,S4:0.93,click:0.2,EC:0.08};
+function renderPhono(spec){
+  const W=1000, H=230, mid=120, n=spec.cycles||2, cw=(W-40)/n, x0=20;
+  let g=`<svg class="phono" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.label||'Heart sounds and murmur timing')}" xmlns="http://www.w3.org/2000/svg">`;
+  g+=`<line class="base" x1="0" y1="${mid}" x2="${W}" y2="${mid}"/>`;
+  const rnd=i=>{const v=Math.sin(i*91.7)*43758.5;return v-Math.floor(v);};
+  for(let c=0;c<n;c++){
+    const X=f=>x0+c*cw+f*cw;
+    // phase brackets
+    if(c===0){ g+=`<path class="brk" d="M${X(0.02)} 26v-8H${X(0.36)}v8"/><text class="ph" x="${(X(0.02)+X(0.36))/2}" y="14">systole</text>`;
+               g+=`<path class="brk" d="M${X(0.37)} 26v-8H${X(0.995)}v8"/><text class="ph" x="${(X(0.37)+X(0.995))/2}" y="14">diastole</text>`; }
+    (spec.murmurs||[]).forEach((m,mi)=>{
+      const a=m.amp==null?0.7:m.amp, steps=Math.max(6,Math.round((m.to-m.from)*cw/3.2)); let d="";
+      for(let k=0;k<=steps;k++){
+        const u=k/steps, pk=m.peak==null?0.5:m.peak; let e;
+        switch(m.shape){
+          case "plateau": e=Math.min(1,u*8,(1-u)*8); break;
+          case "decrescendo": e=Math.min(1,u*12)*(1-u*0.85); break;
+          case "crescendo": e=0.2+0.8*u; break;
+          case "rumble": e=Math.min(1,u*8)*(u<0.6?(1-u*0.9):(0.45+1.3*(u-0.6))); break;
+          default: e=u<pk?u/pk:(1-u)/(1-pk);
+        }
+        const jit = m.shape==="rumble" ? 0.55+0.45*rnd(k+mi*7+c*13) : 0.82+0.18*rnd(k+mi*5+c*11);
+        const h=Math.max(1.5,e*a*70*jit), xx=X(m.from+(m.to-m.from)*u);
+        d+=`M${xx.toFixed(1)} ${(mid-h).toFixed(1)}V${(mid+h).toFixed(1)}`;
+      }
+      g+=`<path class="mur" d="${d}"/>`;
+      if(c===0 && m.label) g+=`<text class="ml" x="${X((m.from+m.to)/2)}" y="${mid+92}">${esc(m.label)}</text>`;
+    });
+    (spec.sounds||[]).forEach((sd,si)=>{
+      const at=sd.at!=null?sd.at:(SND_AT[sd.type]||0), amp=sd.amp==null?1:sd.amp, xx=X(at); let d="";
+      const lines=(sd.type==="click"||sd.type==="EC"||sd.type==="OS")?3:5;
+      for(let k=0;k<lines;k++){ const h=amp*80*(k===Math.floor(lines/2)?1:(0.55+0.3*rnd(k+si))); d+=`M${(xx+(k-lines/2)*2.6).toFixed(1)} ${mid-h}V${mid+h}`; }
+      g+=`<path class="snd ${sd.type}" d="${d}"/>`;
+      g+=`<text class="sl" x="${xx}" y="${H-8}">${esc(sd.label||sd.type)}</text>`;
+    });
+  }
+  return g+`</svg>`;
+}
+function phonoBlock(key, cap){
+  const spec=(S.phonos||{})[key]; if(!spec) return "";
+  return `<div class="phonowrap">${renderPhono(spec)}</div><div class="ecgcap">${cap||spec.caption||""} <span class="muted">· tap to enlarge · timing diagram (schematic)</span></div>`;
+}
+function ecgBlock(key, cap){
+  const spec = S.ecgs[key]; if(!spec) return "";
+  return `<div class="ecgwrap" data-ecg="${esc(key)}">${renderECG(spec)}</div><div class="ecgcap">${cap||spec.caption||""} <span class="muted">· tap to enlarge · 25 mm/s, 10 mm/mV (schematic)</span></div>`;
+}
+
+/* ---------- slide renderers ---------- */
+function vitalsHTML(v){ return v?`<div class="vitals">${v.map(x=>`<div class="vital${x[2]?' flag':''}"><div class="k">${esc(x[0])}</div><div class="v">${esc(x[1])}</div></div>`).join("")}</div>`:""; }
+function kicker(s){ return (s.kicker||s.clock)?`<div class="kicker">${s.clock?`<span class="clock">${esc(s.clock)}</span>`:""}${s.kicker?esc(s.kicker):""}</div>`:""; }
+function fragHTML(f){ if(typeof f==="string") return `<div class="frag">${f}</div>`; const cls=f.style?` ${f.style}`:""; return `<div class="frag${cls}">${f.ecg?ecgBlock(f.ecg,f.caption):""}${f.phono?phonoBlock(f.phono,f.caption):""}${f.html||""}</div>`; }
+function notesHTML(s){ return s.notes?`<div class="notes">${s.notes}</div>`:""; }
+function optsHTML(s, idx){
+  return `<div class="opts">${s.options.map((o,k)=>{
+    const ok = (s.type==="mcq") ? (k===s.answer) : !!o.ok;
+    return `<button class="opt ${ok?'right':'wrong'}" data-k="${k}"><span class="L">${LET[k]}</span><span class="body">${typeof o==="string"?o:o.t}${o&&o.fb?`<span class="fb">${ok?'<span class="tag ok">Best</span>':'<span class="tag no">No</span>'}${o.fb}</span>`:""}</span></button>`;}).join("")}</div>`;
+}
+const R = {
+  title(s){ const m=S.meta; return `<div class="hero">
+    <div class="series">${esc(m.series||"Ticker Talks")}${m.number?` · Session ${esc(m.number)}`:""}</div>
+    <svg class="pulse" viewBox="0 0 520 60" aria-hidden="true"><path d="M0 40 H150 l10 -6 l10 6 H200 l8 6 l12 -44 l12 52 l8 -14 H300 q20 -18 40 0 H520"/></svg>
+    <h1>${m.title}</h1><div class="sub">${m.subtitle||""}</div>
+    <div class="meta">${m.duration?`<span>⏱ ${esc(m.duration)}</span>`:""}${m.audience?`<span>👥 ${esc(m.audience)}</span>`:""}${m.setting?`<span>📍 ${esc(m.setting)}</span>`:""}${m.updated?`<span>Updated ${esc(m.updated)}</span>`:""}</div>
+    ${s.html||""}</div>`; },
+  objectives(s){ return `${kicker({kicker:"Before we start"})}<h2>${s.title||"By the end of this talk you can…"}</h2>
+    <ol>${S.objectives.map(o=>`<li>${o}</li>`).join("")}</ol>
+    <details class="card objs"><summary>${S.mappingTitle||"Internal medicine training objectives this case covers"} <span class="muted small">(${(S.mapping||S.epas||[]).length})</span></summary>${(S.mapping||S.epas||[]).map(e=>`<div class="epa"><code>${esc(e.code)}</code><span>${e.title}${e.how?` <span class="muted small">· ${e.how}</span>`:""}</span></div>`).join("")}</details>`; },
+  case(s){ return `${kicker(s)}<h2>${s.title||""}</h2>${s.html||""}${vitalsHTML(s.vitals)}${s.ecg?ecgBlock(s.ecg,s.caption):""}${s.phono?phonoBlock(s.phono,s.phonoCaption):""}${s.ask?`<div class="ask">${s.ask}</div>`:""}`; },
+  teach(s){ return `${kicker(Object.assign({kicker:"Teaching point"},s))}<h2>${s.title||""}</h2>${s.html||""}${s.ecg?ecgBlock(s.ecg,s.caption):""}${s.phono?phonoBlock(s.phono,s.phonoCaption):""}`; },
+  decision(s,idx){ return `${kicker(Object.assign({kicker:"Decision point"},s))}<h2>${s.title||""}</h2>${s.html||""}${s.ecg?ecgBlock(s.ecg,s.caption):""}${s.phono?phonoBlock(s.phono,s.phonoCaption):""}${s.prompt?`<div class="ask">${s.prompt}</div>`:""}
+     ${optsHTML(s,idx)}<div class="btnrow"><button class="btn primary reveal">Reveal answer (R)</button></div>
+     <div class="explain">${s.explain?`<div class="frag pearl">${s.explain}</div>`:""}</div>`; },
+  mcq(s,idx){ return `${kicker({kicker:`MCQ ${s._n} of ${mcqCount}`})}<div class="stem" style="font-size:1.02em">${s.stem}</div>${s.ecg?ecgBlock(s.ecg,s.caption):""}
+     ${optsHTML(s,idx)}<div class="btnrow"><button class="btn primary reveal">Reveal answer (R)</button></div>
+     <div class="explain"><div class="frag pearl"><b>Answer: ${LET[s.answer]}.</b> ${s.explain||""}${s.ref?`<div class="small muted" style="margin-top:.4em">📚 ${s.ref}</div>`:""}</div></div>`; },
+  mcqintro(s){ return `<div class="hero">${kicker({kicker:"Check your understanding"})}<h1>${s.title||"Practice MCQs"}</h1>
+     <p class="sub">${s.html||`${mcqCount} single-best-answer questions. Pick an answer on your own first (fingers up for A–E), then reveal.`}</p></div>`; },
+  summary(s){ const roles=S.canmeds||[]; return `${kicker({kicker:"Take-home"})}<h2>${s.title||"Take-home points"}</h2>
+     <ol>${(s.pearls||[]).map(p=>`<li>${p}</li>`).join("")}</ol>
+     <div class="score" id="scorebox"></div>
+     ${roles.length?`<div class="card"><h3 style="margin-top:0">CanMEDS lens</h3>${roles.map(r=>`<p><span class="role">${esc(r.role)}:</span> ${r.point}</p>`).join("")}</div>`:""}`; },
+  refs(s){ return `${kicker({kicker:"Sources"})}<h2>${s.title||"References"}</h2><ol class="refs">${S.references.map(r=>`<li>${r}</li>`).join("")}</ol>
+     ${S.meta.disclaimer?`<div class="disclaimer">${S.meta.disclaimer}</div>`:""}`; },
+};
+function stepsOf(s){ return (s.steps||[]).length; }
+function slideHTML(s, idx, all){
+  const fn = R[s.type] || R.teach;
+  let html = fn(s, idx);
+  const steps = s.steps||[];
+  const n = all ? steps.length : (idx===st.i ? st.step : 0);
+  html += steps.slice(0,n).map(fragHTML).join("");
+  if (!all && n < steps.length && !(s.options && !st.revealed[idx] && s.stepsBeforeReveal!==true)) html += `<div class="hint">▸ ${steps.length-n} more to reveal · press → or Next</div>`;
+  html += notesHTML(s);
+  return `<section class="slide ${s.type}${(all||st.revealed[idx])?' revealed':''}" data-idx="${idx}">${html}</section>`;
+}
+
+/* ---------- render ---------- */
+function render(scrollTop){
+  const s = slides[st.i];
+  $("#stage").innerHTML = slideHTML(s, st.i, false);
+  const sec = $("#stage .slide");
+  const ch = st.choice[st.i];
+  if (ch!=null){ const b=sec.querySelector(`.opt[data-k="${ch}"]`); if(b) b.classList.add("chosen"); }
+  sec.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>choose(+b.dataset.k)));
+  const rv = sec.querySelector(".reveal"); if (rv) rv.addEventListener("click", reveal);
+  sec.querySelectorAll(".ecgwrap, .phonowrap").forEach(w=>w.addEventListener("click",()=>zoom(w)));
+  const sb = sec.querySelector("#scorebox"); if (sb) sb.innerHTML = scoreText();
+  $("#count").textContent = `${st.i+1} / ${slides.length}`;
+  $("#progress").style.width = ((st.i+ (stepsOf(s)?st.step/(stepsOf(s)+1):0))/(slides.length-1)*100)+"%";
+  $("#prev").disabled = st.i===0 && st.step===0;
+  try { history.replaceState(null,"","#s="+(st.i+1)); } catch(e){} // sandboxed previews block this
+  if (scrollTop!==false) $("#main").scrollTop = 0; else { const s0=slides[st.i]; const opts=sec.querySelector(".opts"); if (s0.options && st.revealed[st.i] && st.step===0 && opts) { opts.scrollIntoView({behavior:"smooth",block:"start"}); } else { const fr=sec.querySelectorAll(".frag, .explain"); const last=[...fr].filter(x=>x.offsetParent!==null).pop(); if(last) last.scrollIntoView({behavior:"smooth",block:"nearest"}); } }
+  save();
+}
+function scoreText(){
+  let right=0, tried=0;
+  slides.forEach((s,i)=>{ if(s.type==="mcq" && st.choice[i]!=null){ tried++; if(st.choice[i]===s.answer) right++; }});
+  return tried?`<div class="card">Room score on MCQs: <b>${right} / ${mcqCount}</b>${tried<mcqCount?` <span class="muted">(${mcqCount-tried} not answered)</span>`:""}</div>`:"";
+}
+function choose(k){ if (st.revealed[st.i]) return; const s=slides[st.i]; if(!s.options||k>=s.options.length) return; st.choice[st.i]=k; render(false); }
+function reveal(){ const s=slides[st.i]; if(!s.options) return; st.revealed[st.i]=true; render(false); startTimer(); }
+function next(){
+  startTimer();
+  const s=slides[st.i], after = !!s.options && s.stepsBeforeReveal!==true;
+  if (st.step < stepsOf(s) && !(after && !st.revealed[st.i])) { st.step++; render(false); return; }
+  if (s.options && !st.revealed[st.i]) { reveal(); return; }
+  if (st.step < stepsOf(s)) { st.step++; render(false); return; }
+  if (st.i < slides.length-1){ st.i++; st.step=0; render(); }
+}
+function prev(){
+  if (st.step>0){ st.step--; render(false); return; }
+  if (st.i>0){ st.i--; st.step=stepsOf(slides[st.i]); render(); }
+}
+function go(i){ st.i=Math.max(0,Math.min(slides.length-1,i)); st.step=0; render(); }
+function resetSession(){ st.choice={}; st.revealed={}; st.timer={run:false,t0:0,acc:0}; try{ sessionStorage.removeItem("tt:"+S.meta.id); }catch(e){} tick(); go(0); }
+window.addEventListener("hashchange",()=>{ let n=NaN; try{ n=parseInt((location.hash.match(/s=(\d+)/)||[])[1]||"",10); }catch(e){} if(!isNaN(n) && n-1!==st.i && n>=1 && n<=slides.length) go(n-1); });
+
+/* ---------- zoom ---------- */
+function zoom(w){ const z=document.createElement("div"); z.className="zoom"; z.innerHTML=w.innerHTML; z.addEventListener("click",()=>z.remove()); document.body.appendChild(z); }
+
+/* ---------- timer ---------- */
+const TOTAL = (S.meta.minutes||15)*60;
+function elapsed(){ return Math.floor((st.timer.acc + (st.timer.run? (Date.now()-st.timer.t0):0))/1000); }
+function startTimer(){ if(!st.timer.run && st.i>=0){ st.timer.run=true; st.timer.t0=Date.now(); } }
+function tick(){
+  const e=elapsed(), m=String(Math.floor(e/60)).padStart(2,"0"), sec=String(e%60).padStart(2,"0");
+  const el=$("#timer"); el.textContent=`⏱ ${m}:${sec} / ${S.meta.minutes||15}:00`;
+  el.classList.toggle("over", e>TOTAL); el.classList.toggle("near", e>TOTAL-120 && e<=TOTAL);
+}
+$("#timer").addEventListener("click",()=>{ if(st.timer.run){ st.timer.acc+=Date.now()-st.timer.t0; st.timer.run=false; } else startTimer(); tick(); });
+$("#timer").addEventListener("dblclick",()=>{ st.timer={run:false,t0:0,acc:0}; tick(); save(); });
+setInterval(tick, 500); tick();
+
+/* ---------- theme, notes, fullscreen, print ---------- */
+function setTheme(t){ document.documentElement.setAttribute("data-theme",t); try{localStorage.setItem("tt:theme",t);}catch(e){} }
+let theme; try{ theme=localStorage.getItem("tt:theme"); }catch(e){}
+let darkPref=false; try{ darkPref=matchMedia("(prefers-color-scheme: dark)").matches; }catch(e){}
+setTheme(theme || (darkPref?"dark":"light"));
+$("#themeBtn").addEventListener("click",()=>setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark"));
+$("#notesBtn").addEventListener("click",()=>document.body.classList.toggle("show-notes"));
+if (!document.fullscreenEnabled) $("#fsBtn").style.display="none"; // e.g. app previews and iframes
+$("#fsBtn").addEventListener("click",()=>{ try { const r = document.fullscreenElement ? document.exitFullscreen() : (document.documentElement.requestFullscreen && document.documentElement.requestFullscreen()); if (r && r.catch) r.catch(()=>{}); } catch(e){} });
+let scale=1; const setScale=v=>{scale=Math.max(.7,Math.min(1.6,v));document.documentElement.style.setProperty("--scale",scale);};
+function buildPrint(){ $("#printall").innerHTML = slides.map((s,i)=>slideHTML(s,i,true)).join(""); $("#printall").querySelectorAll("details").forEach(d=>d.open=true); }
+window.addEventListener("beforeprint", buildPrint);
+$("#prev").addEventListener("click",prev); $("#next").addEventListener("click",next);
+
+document.addEventListener("keydown",e=>{
+  if (e.metaKey||e.ctrlKey||e.altKey) return;
+  const z=document.querySelector(".zoom"); if(z && (e.key==="Escape"||e.key===" ")){ z.remove(); e.preventDefault(); return; }
+  const k=e.key;
+  if (k==="ArrowRight"||k===" "||k==="PageDown"||k==="Enter"){ e.preventDefault(); next(); }
+  else if (k==="ArrowLeft"||k==="PageUp"||k==="Backspace"){ e.preventDefault(); prev(); }
+  else if (k==="Home") go(0); else if (k==="End") go(slides.length-1);
+  else if (k==="0") resetSession();
+  else if (/^[a-hA-H]$/.test(k) && slides[st.i].options && LET.indexOf(k.toUpperCase())<slides[st.i].options.length){ choose(LET.indexOf(k.toUpperCase())); }
+  else if (/^[1-8]$/.test(k) && slides[st.i].options){ choose(+k-1); }
+  else if (k==="r"||k==="R") reveal();
+  else if (k==="n"||k==="N") document.body.classList.toggle("show-notes");
+  else if (k==="t"||k==="T") $("#themeBtn").click();
+  else if (k==="f"||k==="F") $("#fsBtn").click();
+  else if (k==="+"||k==="=") setScale(scale+.1); else if (k==="-"||k==="_") setScale(scale-.1);
+  else if (k==="p"||k==="P"){ buildPrint(); try { window.print(); } catch(e){} }
+});
+let tx=null, ty=null;
+document.addEventListener("touchstart",e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+document.addEventListener("touchend",e=>{ if(tx==null) return; const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5 && !document.querySelector(".zoom")){ dx<0?next():prev(); } tx=null; });
+render();
+})();
+</script>
+</body>
+</html>

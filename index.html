@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cardiology Teaching Lab</title>
+<meta name="description" content="Free interactive cardiology teaching tools: right heart cath simulator, ECG rhythm lab, PV loop simulator and case-based Ticker Talks.">
+<meta name="theme-color" content="#14202b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: a monitor-strip header with a live trace, then a two-column grid of four tool panels */
+:root{
+  --bg:#f6f7f8; --panel:#ffffff; --fg:#14202b; --muted:#5a6772; --line:#d9dfe4;
+  --accent:#c2273b; --trace:#1f8a5b; --chip:#eef1f3;
+  --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1419; --panel:#141e25; --fg:#e6edf2; --muted:#93a2ad; --line:#26343e;
+  --accent:#ff5d6c; --trace:#4fe39a; --chip:#1b2831; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1419; --panel:#141e25; --fg:#e6edf2; --muted:#93a2ad; --line:#26343e;
+  --accent:#ff5d6c; --trace:#4fe39a; --chip:#1b2831; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-block:40px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:32px}
+header{display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(32px,6vw,52px);line-height:1.05;margin:0;text-wrap:balance}
+.lede{max-width:62ch;color:var(--muted);margin:0}
+.strip{border:1px solid var(--line);border-radius:6px;background:var(--panel);overflow:hidden;position:relative}
+.strip canvas{display:block;width:100%;height:84px}
+.strip .hr{position:absolute;top:8px;right:12px;font-family:var(--mono);font-size:12px;color:var(--trace)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:720px){.grid{grid-template-columns:1fr}}
+.tool{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.tool h2{margin:0;font-family:var(--display);font-weight:600;font-size:24px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.tool p{margin:0;color:var(--muted)}
+.vars{display:flex;flex-wrap:wrap;gap:6px}
+.vars span{font-family:var(--mono);font-size:12px;background:var(--chip);border-radius:4px;padding:2px 7px;color:var(--fg)}
+.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:4px}
+a.btn{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:600;font-size:14px;color:var(--bg);background:var(--fg);padding:8px 14px;border-radius:4px}
+a.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+a.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pending{border-style:dashed}
+.status{font-family:var(--mono);font-size:12px;color:var(--muted)}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+body{margin:0}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Teaching tools · cardiology</div>
+    <h1>Cardiology Teaching Lab</h1>
+    <p class="lede">Four tools in one place: simulate a right heart cath, read rhythm strips, explore pressure–volume loops, and present short case-based Ticker Talks.</p>
+  </header>
+
+  <div class="strip" aria-hidden="true"><canvas id="ecg"></canvas><div class="hr">HR 72 · NSR</div></div>
+
+  <section class="grid">
+    <article class="tool">
+      <div class="tag">Haemodynamics</div>
+      <h2>Right Heart Cath Simulator</h2>
+      <p>Advance the catheter through RA, RV, PA and wedge, read the waveforms and work through haemodynamic cases.</p>
+      <div class="vars"><span>RA</span><span>RV</span><span>PA</span><span>PCWP</span><span>CO / CI</span><span>PVR (WU)</span></div>
+      <div class="links"><a class="btn" href="rhc-simulator/">Open simulator</a></div>
+    </article>
+
+    <article class="tool">
+      <div class="tag">Electrophysiology</div>
+      <h2>ECG Rhythm Lab</h2>
+      <p>Generate and interpret rhythm strips, from sinus rhythm through blocks, tachyarrhythmias and arrest rhythms.</p>
+      <div class="vars"><span>25 mm/s</span><span>PR</span><span>QRS</span><span>QTc</span><span>Rate</span></div>
+      <div class="links"><a class="btn" href="ecg-simulator/">Open rhythm lab</a></div>
+    </article>
+
+    <article class="tool">
+      <div class="tag">Ventricular mechanics</div>
+      <h2>PV Loop Simulator</h2>
+      <p>Change preload, afterload and contractility and watch the pressure–volume loop respond, with scenarios for valve disease, cardiomyopathies and shock.</p>
+      <div class="vars"><span>ESPVR</span><span>EDPVR</span><span>SV</span><span>EF</span><span>Ees / Ea</span></div>
+      <div class="links"><a class="btn" href="pv-loop-simulator/">Open simulator</a></div>
+    </article>
+
+    <article class="tool">
+      <div class="tag">Case-based talks</div>
+      <h2>Ticker Talks</h2>
+      <p>Twenty 15-minute CCU sessions, grouped by topic. Each one walks through a case with decision points, teaching slides and a short quiz.</p>
+      <div class="vars"><span>20 sessions</span><span>Case decisions</span><span>MCQs</span></div>
+      <div class="links"><a class="btn" href="ticker-talks/">Open Ticker Talks</a></div>
+    </article>
+  </section>
+
+  <footer>Free to use on the ward, in teaching sessions and on your phone. Add this page to your home screen and the tools keep working without a connection. For education only, not for clinical decision-making.</footer>
+</div>
+
+<script>
+(function(){
+  const c=document.getElementById('ecg'),x=c.getContext('2d');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w,h,dpr;
+  function size(){dpr=devicePixelRatio||1;w=c.clientWidth;h=c.clientHeight;c.width=w*dpr;c.height=h*dpr;x.setTransform(dpr,0,0,dpr,0,0)}
+  size();addEventListener('resize',size);
+  const g=(t,m,s,a)=>a*Math.exp(-((t-m)**2)/(2*s*s));
+  function beat(t){t=t%0.833;return g(t,.12,.025,.12)+g(t,.255,.008,-.12)+g(t,.28,.01,1)+g(t,.305,.009,-.25)+g(t,.52,.045,.28)}
+  const col=()=>getComputedStyle(document.documentElement).getPropertyValue('--trace').trim();
+  let off=0;
+  function draw(){
+    x.clearRect(0,0,w,h);x.strokeStyle=col();x.lineWidth=1.6;x.beginPath();
+    for(let px=0;px<=w;px++){const t=(px+off)/220;const y=h*.68-beat(t)*h*.55;px?x.lineTo(px,y):x.moveTo(px,y)}
+    x.stroke();
+    if(!reduce){off+=2;requestAnimationFrame(draw)}
+  }
+  draw();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>

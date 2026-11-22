@@ -1,0 +1,4 @@
+# GitHub Pages: keep the authoring pipeline and repo docs off the public site.
+exclude:
+  - pipeline
+  - README.md

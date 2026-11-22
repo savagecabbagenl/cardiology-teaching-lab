@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ticker Talks</title><style>
+:root{--bg:#f7f6f2;--surface:#fff;--ink:#1b1d22;--muted:#5b606b;--line:#d9d7cf;--accent:#b4232f;--soft:#f6dfe1}
+@media (prefers-color-scheme:dark){:root{--bg:#121417;--surface:#1b1e23;--ink:#eef0f3;--muted:#a3a9b4;--line:#343a43;--accent:#ff5d68;--soft:#3a1c20}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.45}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 16px 48px}
+header .series{font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-size:.8em}
+h1{margin:.15em 0 .2em;font-size:2.1em}header p{margin:0;color:var(--muted);max-width:60ch}
+.pulse{width:100%;max-width:420px;height:40px;margin:10px 0 4px}.pulse path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+input{width:100%;max-width:420px;margin:18px 0 4px;padding:.65em .9em;font:inherit;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+h2{font-size:.8em;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:28px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.card{display:flex;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;color:inherit;text-decoration:none;transition:border-color .15s,transform .15s}
+.card:hover,.card:focus-visible{border-color:var(--accent);transform:translateY(-1px);outline:none}
+.num{flex:none;width:2.4em;height:2.4em;border-radius:10px;background:var(--soft);color:var(--accent);font-weight:800;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.body{display:flex;flex-direction:column;min-width:0}.topic{font-weight:700}.title{color:var(--accent);font-style:italic;font-size:.92em}
+.sub{color:var(--muted);font-size:.88em;margin-top:4px}.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tags span{font-size:.72em;border:1px solid var(--line);border-radius:999px;padding:.1em .6em;color:var(--muted)}
+.hide{display:none!important}footer{margin-top:36px;color:var(--muted);font-size:.82em}
+@media (max-width:500px){.grid{grid-template-columns:1fr}h1{font-size:1.7em}}
+@media print{input,.pulse{display:none}.card{break-inside:avoid}}
+</style></head><body>
+<style>.ctl-home{display:block;font:500 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;padding:9px max(16px,env(safe-area-inset-left,0px));background:#14202b;color:#e6edf2;text-decoration:none;letter-spacing:.01em}.ctl-home:hover,.ctl-home:focus-visible{background:#22323f;text-decoration:underline}</style>
+<a class="ctl-home" href="../">&larr; Cardiology Teaching Lab</a>
+<div class="wrap">
+<header><div class="series">Ticker Talks · CCU Teaching</div><h1>Case-based cardiology in 15 minutes</h1>
+<svg class="pulse" viewBox="0 0 420 40" aria-hidden="true"><path d="M0 24 H120 l8 -4 8 4 H160 l6 6 8 -28 8 34 6 -12 H230 l10 -6 10 6 H420"/></svg>
+<p>20 interactive sessions for residents and clerks. Each one is a case with decision points, short teaching slides and four practice MCQs. Open one to present it; press P for a printable handout.</p>
+<input id="q" type="search" placeholder="Filter, e.g. AF, valve, shock" aria-label="Filter sessions"></header>
+<section class="grp"><h2>Coronary disease and shock</h2><div class="grid"><a class="card" href="01-STEMI-4-hours-from-the-cath-lab.html" data-q="coronary disease and shock stemi, 4 hours from the cath lab stemi, 4 hours from the cath lab inferior stemi with rv and posterior involvement in a rural hospital: recognition, reperfusion strategy, the pharmacoinvasive pathway, and what to do when lysis fails.">
+  <span class="num">01</span>
+  <span class="body"><span class="topic">STEMI, 4 hours from the cath lab</span><span class="sub">Inferior STEMI with RV and posterior involvement in a rural hospital: recognition, reperfusion strategy, the pharmacoinvasive pathway, and what to do when lysis fails.</span>
+  <span class="tags"><span>15 min</span><span>5 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="15-NSTE-ACS.html" data-q="coronary disease and shock nste-acs the pressure that came and went nste-acs: reading high-sensitivity troponin, timing the angiogram, antithrombotics before and after pci, and secondary prevention.">
+  <span class="num">15</span>
+  <span class="body"><span class="topic">NSTE-ACS</span><span class="title">The pressure that came and went</span><span class="sub">NSTE-ACS: reading high-sensitivity troponin, timing the angiogram, antithrombotics before and after PCI, and secondary prevention.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="14-Cardiogenic-shock.html" data-q="coronary disease and shock cardiogenic shock cold and wet cardiogenic shock after mi: recognise it early, choose the right vasopressor, open the culprit, and know when a pump helps.">
+  <span class="num">14</span>
+  <span class="body"><span class="topic">Cardiogenic shock</span><span class="title">Cold and wet</span><span class="sub">Cardiogenic shock after MI: recognise it early, choose the right vasopressor, open the culprit, and know when a pump helps.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a></div></section><section class="grp"><h2>Heart failure</h2><div class="grid"><a class="card" href="08-Acute-decompensated-heart-failure.html" data-q="heart failure acute decompensated heart failure drowning on dry land acute decompensated heart failure: hemodynamic profiles, diuretic dosing that actually decongests, the creatinine that shouldn&#x27;t scare you, and leaving hospital on gdmt.">
+  <span class="num">08</span>
+  <span class="body"><span class="topic">Acute decompensated heart failure</span><span class="title">Drowning on dry land</span><span class="sub">Acute decompensated heart failure: hemodynamic profiles, diuretic dosing that actually decongests, the creatinine that shouldn&#x27;t scare you, and leaving hospital on GDMT.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="09-Chronic-HFrEF.html" data-q="heart failure chronic hfref management four pillars in four weeks chronic hfref after discharge: starting all four drug classes fast, handling potassium and creatinine, iron, and who needs an icd.">
+  <span class="num">09</span>
+  <span class="body"><span class="topic">Chronic HFrEF management</span><span class="title">Four pillars in four weeks</span><span class="sub">Chronic HFrEF after discharge: starting all four drug classes fast, handling potassium and creatinine, iron, and who needs an ICD.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a></div></section><section class="grp"><h2>Valve disease</h2><div class="grid"><a class="card" href="02-Severe-aortic-stenosis.html" data-q="valve disease severe aortic stenosis the man who fainted on the stairs severe aortic stenosis: bedside signs, low-flow low-gradient as, dobutamine stress echo, and choosing tavi or savr.">
+  <span class="num">02</span>
+  <span class="body"><span class="topic">Severe aortic stenosis</span><span class="title">The man who fainted on the stairs</span><span class="sub">Severe aortic stenosis: bedside signs, low-flow low-gradient AS, dobutamine stress echo, and choosing TAVI or SAVR.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="03-Rheumatic-mitral-stenosis.html" data-q="valve disease rheumatic mitral stenosis breathless at 24 weeks rheumatic mitral stenosis unmasked by pregnancy and atrial fibrillation: rate control, the right anticoagulant, balloon valvotomy, and secondary prevention.">
+  <span class="num">03</span>
+  <span class="body"><span class="topic">Rheumatic mitral stenosis</span><span class="title">Breathless at 24 weeks</span><span class="sub">Rheumatic mitral stenosis unmasked by pregnancy and atrial fibrillation: rate control, the right anticoagulant, balloon valvotomy, and secondary prevention.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="04-Primary-mitral-regurgitation.html" data-q="valve disease primary mitral regurgitation the asymptomatic flail primary (degenerative) mitral regurgitation: dynamic auscultation, grading severity, when to operate on someone who feels fine, and the acute mr you can&#x27;t miss.">
+  <span class="num">04</span>
+  <span class="body"><span class="topic">Primary mitral regurgitation</span><span class="title">The asymptomatic flail</span><span class="sub">Primary (degenerative) mitral regurgitation: dynamic auscultation, grading severity, when to operate on someone who feels fine, and the acute MR you can&#x27;t miss.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="05-Functional-mitral-regurgitation.html" data-q="valve disease functional mitral regurgitation it&#x27;s the ventricle, not the valve secondary (functional) mitral regurgitation in hfref: treat the ventricle first, then decide who benefits from transcatheter edge-to-edge repair.">
+  <span class="num">05</span>
+  <span class="body"><span class="topic">Functional mitral regurgitation</span><span class="title">It&#x27;s the ventricle, not the valve</span><span class="sub">Secondary (functional) mitral regurgitation in HFrEF: treat the ventricle first, then decide who benefits from transcatheter edge-to-edge repair.</span>
+  <span class="tags"><span>15 min</span><span>3 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="06-Aortic-regurgitation.html" data-q="valve disease aortic regurgitation the bounding pulse aortic regurgitation, chronic and acute: eponymous signs that matter, lv thresholds for surgery, bicuspid aortopathy, and the acute ar that kills quietly.">
+  <span class="num">06</span>
+  <span class="body"><span class="topic">Aortic regurgitation</span><span class="title">The bounding pulse</span><span class="sub">Aortic regurgitation, chronic and acute: eponymous signs that matter, LV thresholds for surgery, bicuspid aortopathy, and the acute AR that kills quietly.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a></div></section><section class="grp"><h2>Cardiomyopathy</h2><div class="grid"><a class="card" href="07-HOCM.html" data-q="cardiomyopathy hypertrophic obstructive cardiomyopathy collapse at the rink hypertrophic obstructive cardiomyopathy: dynamic murmurs, the drugs that kill, sudden-death risk and icds, cardiac myosin inhibitors, and the family.">
+  <span class="num">07</span>
+  <span class="body"><span class="topic">Hypertrophic obstructive cardiomyopathy</span><span class="title">Collapse at the rink</span><span class="sub">Hypertrophic obstructive cardiomyopathy: dynamic murmurs, the drugs that kill, sudden-death risk and ICDs, cardiac myosin inhibitors, and the family.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a></div></section><section class="grp"><h2>Arrhythmias</h2><div class="grid"><a class="card" href="10-AF-rapid-ventricular-response.html" data-q="arrhythmias af with rapid ventricular response fast, irregular and frightened atrial fibrillation with rapid ventricular response: cardioversion and the clock, rate control when the ventricle is weak, the pre-excited af you must not slow, and chads-65.">
+  <span class="num">10</span>
+  <span class="body"><span class="topic">AF with rapid ventricular response</span><span class="title">Fast, irregular and frightened</span><span class="sub">Atrial fibrillation with rapid ventricular response: cardioversion and the clock, rate control when the ventricle is weak, the pre-excited AF you must not slow, and CHADS-65.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="11-SVT-AVNRT.html" data-q="arrhythmias svt: avnrt pounding in the neck regular narrow-complex tachycardia that turns out to be avnrt: the modified valsalva, adenosine done right, reading the response, and curing it.">
+  <span class="num">11</span>
+  <span class="body"><span class="topic">SVT: AVNRT</span><span class="title">Pounding in the neck</span><span class="sub">Regular narrow-complex tachycardia that turns out to be AVNRT: the modified Valsalva, adenosine done right, reading the response, and curing it.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="12-Wide-complex-tachycardia.html" data-q="arrhythmias wide complex tachycardia &quot;it&#x27;s just svt with aberrancy&quot; wide-complex tachycardia: why you assume vt, the ecg clues, safe treatment of stable vt, torsades, electrical storm, and the icd conversation.">
+  <span class="num">12</span>
+  <span class="body"><span class="topic">Wide complex tachycardia</span><span class="title">&quot;It&#x27;s just SVT with aberrancy&quot;</span><span class="sub">Wide-complex tachycardia: why you assume VT, the ECG clues, safe treatment of stable VT, torsades, electrical storm, and the ICD conversation.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="13-Bradycardia-AV-block.html" data-q="arrhythmias bradycardia and av block slow and getting slower bradycardia and av block: treat the reversible causes first (brash), atropine and pacing done properly, who needs a permanent pacemaker, and the camper with lyme carditis.">
+  <span class="num">13</span>
+  <span class="body"><span class="topic">Bradycardia and AV block</span><span class="title">Slow and getting slower</span><span class="sub">Bradycardia and AV block: treat the reversible causes first (BRASH), atropine and pacing done properly, who needs a permanent pacemaker, and the camper with Lyme carditis.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a></div></section><section class="grp"><h2>Pericardium and aorta</h2><div class="grid"><a class="card" href="16-Cardiac-tamponade.html" data-q="pericardium and aorta cardiac tamponade squeezed from the outside cardiac tamponade: bedside signs, the echo, keeping the patient alive until the needle, and when not to use one.">
+  <span class="num">16</span>
+  <span class="body"><span class="topic">Cardiac tamponade</span><span class="title">Squeezed from the outside</span><span class="sub">Cardiac tamponade: bedside signs, the echo, keeping the patient alive until the needle, and when not to use one.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="20-Acute-pericarditis.html" data-q="pericardium and aorta acute pericarditis better leaning forward acute pericarditis: making the diagnosis, telling it from stemi, who to admit, nsaid plus colchicine, and what to do when it comes back.">
+  <span class="num">20</span>
+  <span class="body"><span class="topic">Acute pericarditis</span><span class="title">Better leaning forward</span><span class="sub">Acute pericarditis: making the diagnosis, telling it from STEMI, who to admit, NSAID plus colchicine, and what to do when it comes back.</span>
+  <span class="tags"><span>15 min</span><span>3 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="17-Aortic-dissection.html" data-q="pericardium and aorta acute aortic dissection the stemi that wasn&#x27;t acute aortic dissection: spotting it behind an inferior stemi, risk scores and d-dimer, impulse control, and who goes to the or.">
+  <span class="num">17</span>
+  <span class="body"><span class="topic">Acute aortic dissection</span><span class="title">The STEMI that wasn&#x27;t</span><span class="sub">Acute aortic dissection: spotting it behind an inferior STEMI, risk scores and D-dimer, impulse control, and who goes to the OR.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a></div></section><section class="grp"><h2>Syncope and cardiac arrest</h2><div class="grid"><a class="card" href="18-Syncope.html" data-q="syncope and cardiac arrest syncope down without warning syncope: separating the faint from the dangerous, the canadian syncope risk score, tests that help and tests that don&#x27;t, and bifascicular block.">
+  <span class="num">18</span>
+  <span class="body"><span class="topic">Syncope</span><span class="title">Down without warning</span><span class="sub">Syncope: separating the faint from the dangerous, the Canadian Syncope Risk Score, tests that help and tests that don&#x27;t, and bifascicular block.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a><a class="card" href="19-Post-cardiac-arrest-care.html" data-q="syncope and cardiac arrest post-cardiac arrest care after the shock post-cardiac arrest care: who goes to the cath lab, oxygen and blood pressure targets, temperature control, and neuroprognostication without bias.">
+  <span class="num">19</span>
+  <span class="body"><span class="topic">Post-cardiac arrest care</span><span class="title">After the shock</span><span class="sub">Post-cardiac arrest care: who goes to the cath lab, oxygen and blood pressure targets, temperature control, and neuroprognostication without bias.</span>
+  <span class="tags"><span>15 min</span><span>4 decisions</span><span>4 MCQs</span></span></span></a></div></section>
+<footer>Teaching cases with fictional patients. Check doses against product monographs and local protocols. Updated Nov 2026.</footer>
+</div><script>
+const q=document.getElementById('q');q.addEventListener('input',()=>{const v=q.value.trim().toLowerCase();
+document.querySelectorAll('.card').forEach(c=>c.classList.toggle('hide',v&&!c.dataset.q.includes(v)));
+document.querySelectorAll('.grp').forEach(g=>g.classList.toggle('hide',!g.querySelector('.card:not(.hide)')));});
+</script></body></html>

@@ -286,7 +286,7 @@ const COND = {
   vsd: {name:'VSD', full:'Ventricular septal defect', grp:'Shunts', best:'T', sev:['Small','Moderate','Large + PHT'], sevTitle:'Defect size'},
   pda: {name:'PDA', full:'Patent ductus arteriosus', grp:'Shunts', best:'P', sev:['Small','Moderate','Large'], sevTitle:'Duct size'},
   hfref:{name:'HFrEF', full:'Heart failure with reduced EF', grp:'Myocardium', best:'M', sev:DEF_SEV},
-  hcm: {name:'HCM / HOCM', full:'Hypertrophic cardiomyopathy', grp:'Myocardium', best:'T', sev:['No obstruction','Moderate LVOTO','Severe LVOTO'], sevTitle:'Outflow obstruction'},
+  hcm: {name:'HCM / HOCM', full:'Hypertrophic cardiomyopathy', grp:'Myocardium', best:'T', sev:['Latent obstruction','Moderate LVOTO','Severe LVOTO'], sevTitle:'Outflow obstruction'},
   peri:{name:'Pericarditis', full:'Acute pericarditis', grp:'Myocardium', best:'T', sev:['One component','Two components','Three components'], sevTitle:'Friction rub'}
 };
 const ORDER = ['normal','as','ar','ms','mr','mvp','mavr','tr','ps','pr','asd','vsd','pda','hfref','hcm','peri'];
@@ -304,7 +304,7 @@ const KEYFIND = {
   tr:'Holosystolic murmur at the lower left sternal edge that is louder on inspiration.',
   ps:'Ejection systolic murmur in the pulmonary area, with an ejection click that softens on inspiration and a soft, late P2.',
   pr:'Diastolic murmur after P2 in the pulmonary area, louder on inspiration.',
-  asd:'Wide, fixed splitting of S2 with a pulmonary flow murmur.',
+  asd:'Wide, fixed splitting of S2 with a pulmonary flow murmur (a small defect may have near-normal splitting).',
   vsd:'Harsh holosystolic murmur at the lower left sternal edge; loudest with small defects.',
   pda:'Continuous machinery murmur peaking at S2 below the left clavicle.',
   hfref:'S3 at the apex, best with the bell in the left lateral position.',
@@ -321,9 +321,10 @@ const INFO = {
     tryit:'Move the stethoscope from the <b>pulmonary area</b> to the <b>apex</b>: S1 gets louder, S2 gets softer and the split disappears because P2 cannot be heard there.'},
   as:{where:'Right 2nd ICS · radiates to both carotids · sitting forward, diaphragm',
     bullets:['<b>Ejection systolic, crescendo–decrescendo</b>, harsh murmur that starts after S1 and stops before A2.',
-      '<b>Severity is in the shape, not the loudness:</b> as AS worsens the murmur <b>peaks later</b> and lasts longer, and <b>A2 softens</b> until S2 is single or absent.',
+      '<b>Timing matters more than loudness:</b> as AS worsens the murmur <b>peaks later</b> and lasts longer, and <b>A2 softens</b> until S2 is single or absent. A thrill (grade 4/6 or more) suggests severe AS, but a soft murmur does not exclude it when flow is low.',
       'Severe AS prolongs ejection, so A2 can fall after P2 (<b>reversed splitting</b>), and a stiff hypertrophied LV gives an <b>S4</b>.',
-      'An <b>ejection click</b> after S1 suggests a mobile (often bicuspid) valve; it disappears as the valve calcifies.',
+      'An <b>ejection click</b> after S1 suggests a mobile (often bicuspid) valve; it disappears as the valve calcifies and is rare in older patients with calcific AS.',
+      'Feel the carotid: a <b>slow-rising, low-volume pulse</b> (parvus et tardus) is one of the strongest bedside signs of severe AS.',
       'Radiates to the carotids. At the apex it can sound higher-pitched and musical (Gallavardin phenomenon) and be mistaken for MR.'],
     tryit:'Step from <b>Mild</b> to <b>Severe</b> and watch the peak slide later and A2 fade. Then listen at the <b>carotid</b> and the <b>apex</b>.'},
   ar:{where:"Left 3rd ICS (Erb's point) · sitting forward, breath held in expiration · diaphragm",
@@ -331,9 +332,10 @@ const INFO = {
       'Longer murmurs mean more severe chronic AR; in severe AR it lasts through most of diastole.',
       'Moderate and severe AR add an <b>ejection systolic flow murmur</b> at the base from the large stroke volume, without AS.',
       'The <b>Austin Flint murmur</b>: a mid-diastolic apical rumble in severe AR, as the regurgitant jet stops the anterior mitral leaflet opening fully. There is no opening snap and S1 is not loud, unlike MS.',
-      'In acute severe AR the murmur is short and soft because LV and aortic diastolic pressures equalise quickly.'],
+      'In acute severe AR the murmur is short and soft because LV and aortic diastolic pressures equalise quickly.',
+      'Louder at the <b>right</b> sternal edge than the left suggests aortic root dilatation rather than leaflet disease. Chronic severe AR gives a wide pulse pressure and a collapsing pulse.'],
     tryit:'At <b>Erb\'s point</b>, set <b>Mild</b> and press <b>Sit forward, end-expiration</b>: the faint murmur becomes much easier to hear. <b>Handgrip</b> makes it louder too.'},
-  ms:{where:'Apex · bell, held lightly · left lateral position, ideally after brief exercise',
+  ms:{where:'Apex · bell, held lightly, for the rumble; diaphragm for the opening snap, between the apex and the lower left sternal edge · left lateral position, ideally after brief exercise',
     bullets:['<b>Loud S1</b> while the leaflets are still mobile; it softens once they calcify.',
       '<b>Opening snap</b> just after A2. The <b>shorter the A2–OS interval</b>, the higher the LA pressure and the more severe the stenosis.',
       '<b>Mid-diastolic rumble</b>: low-pitched, best with the bell at the apex. Its <b>length</b>, not its loudness, tracks severity.',
@@ -364,6 +366,7 @@ const INFO = {
     bullets:['<b>Holosystolic</b> murmur at the lower left sternal edge, lower-pitched than MR, not radiating to the axilla.',
       '<b>Carvallo sign:</b> louder on inspiration, as venous return to the right heart rises. Watch the breathing indicator.',
       'Severe TR can give a <b>right-sided S3</b>, also louder on inspiration.',
+      '<b>Loudness is a poor guide to severity:</b> severe TR with a large, low-velocity jet is often soft or even silent.',
       'At the bedside look for giant v waves in the JVP and a pulsatile liver.'],
     tryit:'On the <b>tricuspid area</b>, press <b>Held inspiration</b> and listen to the murmur swell (Carvallo sign). Then move to the apex and compare with MR.'},
   ps:{where:'Left 2nd ICS · may radiate to the left neck and back · diaphragm',
@@ -373,21 +376,21 @@ const INFO = {
       'Severe PS can give a right-sided <b>S4</b> and a prominent a wave in the JVP.'],
     tryit:'Set <b>Mild</b> and watch the ejection click (EC) fade on inspiration. Then set <b>Severe</b> and see the late peak and the widely split, soft P2.'},
   pr:{where:'Left 2nd–3rd ICS · diaphragm · louder on inspiration',
-    bullets:['<b>Diastolic decrescendo</b> murmur starting at P2 in the pulmonary area.',
+    bullets:['<b>Diastolic murmur</b> after P2 in the pulmonary area. Its shape and pitch depend on the pulmonary artery pressure.',
       'With normal pulmonary pressures (for example after tetralogy of Fallot repair) it is <b>low-pitched</b> and starts just after P2.',
       'With pulmonary hypertension it is <b>high-pitched and blowing</b> (Graham Steell) and follows a loud P2.',
       'Louder on <b>inspiration</b>, which helps to separate it from AR.',
       'In <b>severe free PR</b> the murmur is <b>short</b>, because PA and RV diastolic pressures equalise early.'],
     tryit:'Compare <b>Moderate</b> with <b>Severe</b>: the severe murmur is louder but shorter. Then listen at <b>Erb\'s point</b> and compare with AR.'},
   asd:{where:'Left 2nd ICS · diaphragm',
-    bullets:['<b>Wide, fixed splitting of S2</b>: the hallmark. The split does not change with breathing.',
+    bullets:['<b>Wide, fixed splitting of S2</b>: the hallmark of a moderate or large shunt. The split does not change with breathing. A <b>small</b> ASD may have near-normal splitting that still moves with respiration.',
       'The murmur is <b>not from the defect</b> (the low-pressure flow is silent) but a <b>pulmonary ejection flow murmur</b> from the extra right-sided volume.',
       'With a moderate or large shunt, a <b>mid-diastolic tricuspid flow rumble</b> appears at the lower left sternal edge.',
       'If pulmonary hypertension develops, P2 gets louder and the flow murmurs fade.'],
     tryit:'Watch the A2–P2 gap on the trace through several breaths: unlike <b>Normal</b>, it stays the same. Set <b>Large</b> and listen at the <b>tricuspid area</b> with the bell.'},
   vsd:{where:'Left 3rd–4th ICS, lower left sternal edge · diaphragm',
     bullets:['<b>Harsh holosystolic</b> murmur at the lower left sternal edge, often with a thrill.',
-      '<b>Small (restrictive) defects are the loudest</b>: a big pressure gradient drives a fast jet (maladie de Roger).',
+      '<b>Small (restrictive) defects are the loudest</b>: a big pressure gradient drives a fast jet (maladie de Roger). A small <b>muscular</b> VSD can be early systolic only, as the muscle closes it late in systole.',
       'A moderate shunt adds an <b>apical mid-diastolic flow rumble</b> and an S3 from high flow across the mitral valve.',
       'A large defect with <b>pulmonary hypertension</b>: the murmur shortens and softens as pressures equalise, and <b>P2 is loud</b>. Eisenmenger physiology is the end stage.'],
     tryit:'Step from <b>Small</b> to <b>Large + PHT</b>: the murmur gets <b>quieter</b> as the patient gets sicker, and P2 gets louder.'},
@@ -409,28 +412,29 @@ const INFO = {
       'In HOCM, a <b>harsh mid-systolic ejection murmur</b> at the lower left sternal edge from dynamic LVOT obstruction. It does <b>not radiate to the carotids</b>.',
       '<b>Standing and Valsalva</b> shrink the LV, increase the obstruction and make the murmur <b>louder</b>; <b>squatting</b> makes it <b>softer</b>. This is the opposite of AS.',
       'Severe obstruction adds late MR from systolic anterior motion (SAM) and can reverse S2 splitting.',
-      'Non-obstructive HCM may have only an S4.'],
+      'With <b>latent obstruction</b> the murmur is faint or absent at rest and appears on standing or Valsalva. Non-obstructive HCM may have only an S4.',
+      'At the bedside: a brisk, sometimes bisferiens carotid pulse and a double apical impulse.'],
     tryit:'With <b>Severe LVOTO</b>, press <b>Squat to stand</b> and hear the murmur grow when the patient stands. <b>Handgrip</b> makes it softer. Then try the <b>carotid</b>: unlike AS, it is quiet there.'},
   peri:{where:'Left sternal edge · diaphragm pressed firmly · sitting up and leaning forward, breath held in expiration',
     bullets:['<b>Pericardial friction rub</b>: a scratchy, high-pitched, superficial sound, like rubbing leather or walking on snow.',
       'Up to <b>three components</b> in sinus rhythm: <b>atrial systole</b> (just before S1), <b>ventricular systole</b> (the loudest and most constant) and <b>early diastole</b> (rapid filling). The atrial component is lost in AF.',
       'It is <b>evanescent</b>: it varies from beat to beat and from hour to hour, so listen repeatedly.',
       'Louder <b>sitting forward at end-expiration</b> with firm pressure. Unlike a pleural rub it persists when the breath is held.',
-      'The ECG shows widespread concave (saddle) <b>ST elevation</b> and <b>PR depression</b>. A large effusion can quieten the rub and muffle the heart sounds.'],
+      'The ECG shows widespread concave (saddle) <b>ST elevation</b> and <b>PR depression</b>. A rub is heard in only about a third of patients, and it can persist despite an effusion, even with tamponade, so check with echo.'],
     tryit:'Set <b>Three components</b>, then press <b>Sit forward, end-expiration</b> and listen to the rub get louder. Switch to <b>AF</b> and the atrial component disappears.'}
 };
 const SEV_A2OS = {mild:0.11, moderate:0.085, severe:0.06};
 
 // ================= manoeuvres =================
 const MANS = {
-  supine:  {name:'Supine', hr:0, what:'Lying flat at 30–45°, breathing normally.'},
+  supine:  {name:'Supine', hr:0, what:'Lying back at 30–45°, breathing normally.'},
   lld:     {name:'Left lateral', hr:0, what:'Rolling onto the left side brings the apex against the chest wall. It brings out left-sided low-pitched sounds (MS rumble, S3, S4) and MR at the apex; use the bell.'},
   lean:    {name:'Sit forward, end-expiration', hr:0, resp:-1, what:'Sitting up, leaning forward and holding the breath out brings the base of the heart forward. It brings out AR and pericardial rubs; S2 splitting closes.'},
   insp:    {name:'Held inspiration', hr:0, resp:1, what:'Inspiration increases venous return to the right heart: right-sided murmurs and sounds get louder (Carvallo sign) and S2 splits more widely. Left-sided murmurs get a little softer.'},
-  valsalva:{name:'Valsalva (strain)', hr:6, resp:-1, what:'Straining reduces venous return and LV size. Most murmurs soften, but <b>HOCM gets louder</b> and the <b>MVP click comes earlier</b>.'},
+  valsalva:{name:'Valsalva (strain)', hr:6, resp:-1, what:'Straining reduces venous return and LV size. Most murmurs soften, but <b>HOCM gets louder</b> and the <b>MVP click comes earlier</b>. After release, right-sided murmurs return within 2–3 beats and left-sided ones take longer.'},
   squat:   {name:'Squatting', hr:-4, what:'Squatting increases venous return and afterload, so the LV is larger. Most murmurs get louder, <b>HOCM softens</b> and the <b>MVP click moves later</b>.'},
   sq2st:   {name:'Squat to stand', hr:0, what:'The patient squats, then stands. Standing pools blood in the legs and shrinks the LV: <b>HOCM gets louder</b>, the <b>MVP click jumps earlier</b>, and most other murmurs soften.'},
-  handgrip:{name:'Handgrip', hr:5, what:'Sustained handgrip raises afterload. <b>MR, AR and VSD get louder</b>; AS and HOCM get softer; the MVP click moves later.'}
+  handgrip:{name:'Handgrip', hr:5, what:'Sustained handgrip raises afterload. <b>MR, AR, VSD and PDA get louder</b>; AS and HOCM get softer; the MVP click moves later.'}
 };
 const MAN_ORDER = ['supine','lld','lean','insp','valsalva','squat','sq2st','handgrip'];
 const SQ2ST_SQUAT_MS = 6000;
@@ -443,11 +447,11 @@ function manGain(man, k, les){
   switch(man){
     case 'valsalva': return k==='hcm' ? 1.8 : 0.6;
     case 'stand':    return k==='hcm' ? 1.7 : 0.75;
-    case 'squat':    return k==='hcm' ? 0.45 : (les==='pda' ? 1 : 1.2);
-    case 'handgrip': return ({mr:1.4, ar:1.4, vsd:1.4, ao:les==='mavr'?1:0.7, hcm:0.6})[k] || 1;
+    case 'squat':    return k==='hcm' ? 0.45 : 1.2;
+    case 'handgrip': if(les==='pda' && k==='pu') return 1.4; return ({mr:1.4, ar:1.4, vsd:1.4, ao:les==='mavr'?1:0.7, hcm:0.6})[k] || 1;
     case 'lld':      return ({lv:1.8, mr:1.3, os:1.2})[k] || 1;
     case 'lean':     return ({ar:1.8, rub:1.7, ao:1.1})[k] || 1;
-    case 'insp':     return RIGHT.has(k) ? 1 : 0.9;
+    case 'insp':     return RIGHT.has(k) ? 1 : (k==='rub' ? 1.05 : 0.9);
   }
   return 1;
 }
@@ -584,7 +588,7 @@ function synthBeat(p, RR, tAbs, sr){
   if(les==='mavr'){ mechClose = true; if(sev==='moderate') a2 = s2 + 0.025; }
   if(les==='ps'){ p2 = a2 + [0.035,0.055,0.08][sv] + 0.02*insp; p2amp = [0.45,0.32,0.18][sv]; }
   if(les==='pr'){ p2amp = sev==='severe' ? 0.6 : 0.5; }
-  if(les==='asd'){ p2 = a2 + [0.045,0.055,0.065][sv]; p2amp = 0.6; }
+  if(les==='asd'){ p2 = sv===0 ? a2 + 0.026 + 0.022*insp : a2 + [0.045,0.055,0.065][sv]; p2amp = 0.6; }
   if(les==='vsd' && sev==='severe'){ p2amp = 1.15; p2 = a2 + 0.012 + 0.012*insp; }
   if(les==='pda' && sev==='severe'){ p2amp = 0.9; }
   if(les==='hfref' && sev==='severe'){ p2amp = 0.95; }
@@ -678,14 +682,14 @@ function synthBeat(p, RR, tAbs, sr){
     break; }
   case 'tr': {
     const a=s1-0.004, b=p2+0.02;
-    M('tr',a,b,[0.1,0.15,0.21][sv]*RI,B.tr,plateau);
+    M('tr',a,b,[0.1,0.15,0.14][sv]*RI,B.tr,plateau);
     addSeg(a,b,'Holosystolic murmur','HSM',G('tr'));
     if(sev==='severe'){ const s3=p2+0.12; thud(s3,0.45*RI,'rv'); addEv(s3,'S3',G('rv')); }
     break; }
   case 'ps': {
     if(sev!=='severe'){ const ec=s1+0.05-0.012*sv, ga=(1-0.75*insp); click(out,sr,T(ec),[0.75,0.55][sv]*ga*G('pu')); addEv(ec,'EC',G('pu')*ga); }
     const a=s1+0.055, pk=[0.35,0.5,0.66][sv], b=(sev==='severe' ? a2+0.03 : a2-0.008);
-    M('pu',a,b,[0.16,0.23,0.28][sv],B.harsh,diamond(pk),48);
+    M('pu',a,b,[0.16,0.23,0.28][sv]*RI,B.harsh,diamond(pk),48);
     addSeg(a,b,'Ejection systolic murmur','ESM',G('pu'));
     if(sev==='severe' && sinus){ const s4=RR-0.035; thud(s4,0.45*RI,'rv'); addEv(s4,'S4',G('rv')); }
     break; }
@@ -1030,7 +1034,7 @@ function manEffectHere(){
     return f<0.5 ? 'Here: the click moves earlier and the murmur lengthens.' : f>0.6 ? 'Here: the click moves later and the murmur shortens.' : '';
   }
   let g = manGain(m,k,les);
-  if(m==='insp' && RIGHT.has(k)) g = 1.45;
+  if(m==='insp' && RIGHT.has(k) && les!=='pda' && les!=='asd') g = 1.45;
   if(m==='lean' && les==='normal') return '';
   const what = {peri:'The rub', hfref:'The S3', ms:'The rumble', mavr:'The flow murmur'}[les] || 'The murmur';
   if(g>=1.15) return `Here: ${what.toLowerCase()} gets louder.`;
@@ -1099,8 +1103,9 @@ function makeItem(lesion){
   let sev = lesion==='mavr' ? pickN(['mild','mild','moderate','severe'],1)[0] : pickN(['mild','moderate','severe'],1)[0];
   if(lesion==='hcm' && sev==='mild') sev='moderate';
   const fam = FAMILY[lesion];
-  const same = pickN(ORDER.filter(k=>k!==lesion && FAMILY[k]===fam),2);
-  const other = pickN(ORDER.filter(k=>k!==lesion && !same.includes(k)),3-same.length);
+  const clash = {mr:'hfref', hfref:'mr'}[lesion];   // severe MR and HFrEF sound alike: never offer both
+  const same = pickN(ORDER.filter(k=>k!==lesion && k!==clash && FAMILY[k]===fam),2);
+  const other = pickN(ORDER.filter(k=>k!==lesion && k!==clash && !same.includes(k)),3-same.length);
   return {lesion, sev: c.sev ? sev : 'moderate', hr: 60+Math.floor(Math.random()*25),
     rhythm: ['ms','mr','hfref'].includes(lesion) && Math.random()<0.25 ? 'af' : 'sinus',
     loc: pickN(['A','P','E','T','M'],1)[0], opts: pickN([lesion,...same,...other],4), answer:null, sevAnswer:null};

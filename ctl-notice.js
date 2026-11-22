@@ -3,15 +3,20 @@
 
    To change the wording: edit NOTICE below and bump ACK_VERSION so everyone sees it again.
    To change where reports go: edit REPORT_URL.
-     - A GitHub "new issue" link (default): page, slide and selected text are prefilled.
-     - Any other link (e.g. a Google Form): opened as is. If the link contains {url},
-       {page} or {details}, those are replaced with the page address, page name and
-       details (use a Google Form "pre-filled link" to get one with these in it). */
+     - A GitHub "new issue" link: page, slide and selected text are prefilled.
+     - Any other link (e.g. a Google Form): opened with these placeholders filled in:
+       {where} page name, slide and address; {selected} text the user highlighted;
+       {url}, {page}, {details} the pieces separately. Get the entry numbers for a
+       Google Form from its "Get pre-filled link" option. */
 (function () {
   'use strict';
 
   var ACK_VERSION = '1';
-  var REPORT_URL = 'https://github.com/savagecabbagenl/cardiology-teaching-lab/issues/new';
+  // Google Form (no account needed). Prefills "Page or tool" and, if text is highlighted, "What is wrong?".
+  var REPORT_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdx6cWCKfRk5Uy2Vif-_KspEx9TZGSYG72BqPGz2VLKuXKPJw/viewform' +
+    '?usp=pp_url&entry.1343790078={where}&entry.183730696={selected}';
+  // GitHub alternative (needs a GitHub account):
+  // var REPORT_URL = 'https://github.com/savagecabbagenl/cardiology-teaching-lab/issues/new';
 
   var NOTICE = {
     title: 'Before you start',
@@ -87,7 +92,13 @@
         'title=' + encodeURIComponent('Mistake: ' + pageName()) +
         '&body=' + encodeURIComponent(body);
     }
+    var count = doc.getElementById('count');
+    var where = pageName() + (count && count.textContent.trim() ? ' (slide ' + count.textContent.trim() + ')' : '') + ' ' + url;
+    var sel = '';
+    try { sel = String(window.getSelection() || '').trim().slice(0, 600); } catch (e) {}
     return REPORT_URL
+      .replace(/\{where\}/g, encodeURIComponent(where))
+      .replace(/\{selected\}/g, sel ? encodeURIComponent('Highlighted text: "' + sel + '"\n\n') : '')
       .replace(/\{url\}/g, encodeURIComponent(url))
       .replace(/\{page\}/g, encodeURIComponent(pageName()))
       .replace(/\{details\}/g, encodeURIComponent(details()));

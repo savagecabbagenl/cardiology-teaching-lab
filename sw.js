@@ -1,9 +1,10 @@
 // Offline support: every page is cached on first visit, pages refresh from the network when online.
-const VERSION = 'ctl-v5';
+const VERSION = 'ctl-v6';
 const PRECACHE = [
   "./",
   "index.html",
   "manifest.webmanifest",
+  "ctl-notice.js",
   "icons/icon.svg",
   "icons/icon-192.png",
   "icons/apple-touch-icon.png",

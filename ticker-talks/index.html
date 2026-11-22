@@ -93,4 +93,5 @@ h2{font-size:.8em;text-transform:uppercase;letter-spacing:.1em;color:var(--muted
 const q=document.getElementById('q');q.addEventListener('input',()=>{const v=q.value.trim().toLowerCase();
 document.querySelectorAll('.card').forEach(c=>c.classList.toggle('hide',v&&!c.dataset.q.includes(v)));
 document.querySelectorAll('.grp').forEach(g=>g.classList.toggle('hide',!g.querySelector('.card:not(.hide)')));});
-</script></body></html>
+</script><script src="../ctl-notice.js" defer></script>
+</body></html>

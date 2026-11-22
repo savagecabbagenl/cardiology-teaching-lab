@@ -1,7 +1,7 @@
 {
   "name": "Cardiology Teaching Lab",
   "short_name": "Cardio Lab",
-  "description": "Interactive cardiology teaching tools: RHC simulator, ECG rhythm lab, PV loop simulator and Ticker Talks.",
+  "description": "Interactive cardiology teaching tools: RHC simulator, ECG rhythm lab, PV loop simulator, heart sounds simulator and Ticker Talks.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

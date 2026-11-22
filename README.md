@@ -9,6 +9,7 @@ Free, interactive cardiology teaching tools for the ward, the classroom and your
 | Right Heart Cath Simulator | `rhc-simulator/` |
 | ECG Rhythm Lab | `ecg-simulator/` |
 | PV Loop Simulator | `pv-loop-simulator/` |
+| Heart Sounds Simulator | `heart-sounds/` |
 | Ticker Talks (20 case-based CCU sessions) | `ticker-talks/` |
 
 Everything is plain static HTML with no build step. The site is served by GitHub Pages from the `main` branch root. `sw.js` and `manifest.webmanifest` let people add it to their home screen and use it offline; bump `VERSION` in `sw.js` when adding new pages.

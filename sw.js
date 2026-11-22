@@ -1,5 +1,5 @@
 // Offline support: every page is cached on first visit, pages refresh from the network when online.
-const VERSION = 'ctl-v2';
+const VERSION = 'ctl-v3';
 const PRECACHE = [
   "./",
   "index.html",
@@ -10,6 +10,7 @@ const PRECACHE = [
   "rhc-simulator/",
   "ecg-simulator/",
   "pv-loop-simulator/",
+  "heart-sounds/",
   "ticker-talks/",
   "ticker-talks/01-STEMI-4-hours-from-the-cath-lab.html",
   "ticker-talks/02-Severe-aortic-stenosis.html",

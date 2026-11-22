@@ -139,14 +139,14 @@ details p, details li{font-size:12.5px;color:var(--muted)}
     <div class="panel">
       <h2>Quick interventions</h2>
       <div class="row">
-        <button class="btn" data-iv="fluid">Fluid +250 mL</button>
-        <button class="btn" data-iv="bleed">Blood loss −250 mL</button>
+        <button class="btn" data-iv="fluid" title="Adds 100 mL of stressed volume, roughly a 500 mL bolus that stays intravascular">Fluid bolus (+100 mL stressed)</button>
+        <button class="btn" data-iv="bleed" title="Removes 100 mL of stressed volume">Volume loss (−100 mL stressed)</button>
         <button class="btn" data-iv="vasodil">Vasodilator (SVR −30%)</button>
         <button class="btn" data-iv="pressor">Vasopressor (SVR +30%)</button>
         <button class="btn" data-iv="inotrope">Inotrope (Ees +40%)</button>
         <button class="btn" data-iv="bblock">β-blocker (HR −20, Ees −15%)</button>
       </div>
-      <p class="status" style="margin:8px 0 0">Tip: press <b>Snapshot</b> above the loop first, then apply an intervention to compare before and after.</p>
+      <p class="status" style="margin:8px 0 0">Tip: press <b>Snapshot</b> above the loop first, then apply an intervention to compare before and after. Volumes are stressed volume in model units: the whole modelled stressed volume is about 590 mL, so 100 mL here is a sizeable bolus. There is no baroreflex, so heart rate and SVR stay where you set them.</p>
     </div>
   </aside>
 
@@ -207,15 +207,16 @@ details p, details li{font-size:12.5px;color:var(--muted)}
       <h2>About the model</h2>
       <details>
         <summary>How the simulation works</summary>
-        <p>The left ventricle is a time-varying elastance: pressure moves between the end-diastolic curve, P = A·(e<sup>β(V−V₀)</sup>−1), and the end-systolic line, P = Ees·(V−V₀), as an activation function rises and falls each beat. Relaxation speed stretches the fall of that activation.</p>
-        <p>The LV is coupled to a left atrium with its own passive and active elastance, mitral and aortic valves, an arterial Windkessel (characteristic impedance, compliance and SVR), a systemic venous reservoir, a right-heart pump that returns venous blood to the lungs, and a pulmonary compartment. Blood volume is conserved, so congestion and low output come out of the model rather than being imposed.</p>
+        <p>The left ventricle is a time-varying elastance: pressure moves between the end-diastolic curve, P = A·(e<sup>β(V−V₀)</sup>−1), and the end-systolic line, P = Ees·(V−V₀), as an activation function rises and falls each beat. Relaxation speed stretches the fall of that activation; if relaxation is slow and the beat is short, it carries over into the next diastole.</p>
+        <p>The LV is coupled to a left atrium with its own passive and active elastance, mitral and aortic valves, an arterial Windkessel (characteristic impedance, compliance and SVR), a systemic venous reservoir, a pulmonary compartment, and a simple right-heart flow source that returns venous blood to the lungs in proportion to venous pressure (no right ventricle as such). Blood volume is conserved, so congestion and low output come out of the model rather than being imposed.</p>
         <p>Valves follow the Bernoulli orifice relation, ΔP = (Q / (50·A))² with Q in mL/s and A in cm², so stenosis is set by valve area and regurgitation by effective regurgitant orifice area (EROA).</p>
       </details>
       <details>
         <summary>Limitations</summary>
         <ul>
           <li>It is a teaching model, not a patient-specific predictor. Numbers are plausible, not exact.</li>
-          <li>The right heart, pericardium, coronary flow and reflexes (baroreflex) are not modelled. Presets include typical compensations (heart rate, SVR, volume) set by hand.</li>
+          <li>The right ventricle, pericardium, coronary flow and reflexes (baroreflex) are not modelled. Presets include typical compensations (heart rate, SVR, volume) set by hand, and they do not undo themselves when you treat the patient.</li>
+          <li>Volumes are in model units. The whole modelled stressed volume is about 590 mL, so the fluid and volume-loss buttons do not map one-to-one onto litres of real fluid.</li>
           <li>HCM outflow obstruction is approximated as a fixed narrowing; real LVOT obstruction is dynamic.</li>
           <li>Atrial fibrillation is shown as loss of atrial kick at a faster rate; beat-to-beat irregularity is not simulated.</li>
         </ul>
@@ -235,13 +236,14 @@ const PVSim = (() => {
   const DT = 5e-5;
   const FIXED = { Csv: 50, Cp: 8, Rp: 0.075, Grh: 18, Rmv: 0.003, Zc: 0.006, V0la: 15 };
 
+  // Ventricular activation. If relaxation is slow and the beat is short, the tail of the
+  // previous beat's relaxation carries into the next diastole (incomplete relaxation).
   function actV(tb, T, relax) {
     const tp = 0.34 * Math.sqrt(T);
-    let tr = 0.5 * tp * relax;
-    tr = Math.min(tr, T - tp - 0.03);
-    if (tb < tp) return 0.5 * (1 - Math.cos(Math.PI * tb / tp));
-    if (tb < tp + tr) return 0.5 * (1 + Math.cos(Math.PI * (tb - tp) / tr));
-    return 0;
+    const tr = 0.5 * tp * relax;
+    const f = t => t < tp ? 0.5 * (1 - Math.cos(Math.PI * t / tp))
+      : t < tp + tr ? 0.5 * (1 + Math.cos(Math.PI * (t - tp) / tr)) : 0;
+    return Math.max(f(tb), f(tb + T));
   }
   function actA(tb, T) {
     const pr = Math.min(0.16, 0.2 * T), da = Math.min(0.18, 0.3 * T);
@@ -375,58 +377,58 @@ const PRESETS = [
   tag:'Reference', summary:'A healthy adult ventricle at rest. The loop is a rounded rectangle whose four corners are the four valve events.',
   bullets:['Bottom edge: diastolic filling along the EDPVR, mitral valve open (MVO to MVC).','Right edge: isovolumic contraction. Pressure rises with both valves shut.','Top edge: ejection once LV pressure exceeds aortic diastolic pressure (AVO to AVC).','Left edge: isovolumic relaxation. The top-left corner sits on the ESPVR.','Loop width is stroke volume; loop area is stroke work.'],
   try:'Raise <b>preload</b>: the loop widens to the right and stroke volume rises (Frank–Starling). Raise <b>SVR</b>: the loop gets taller and narrower as ESV moves right along the ESPVR. Raise <b>Ees</b>: the ESPVR steepens and ESV falls.'},
- {id:'acuteAR', group:'Valve disease', name:'Acute aortic regurgitation', p:{ARA:0.3,HR:105,SVR:1.25,Vol:740,k:0.03},
+ {id:'acuteAR', group:'Valve disease', name:'Acute aortic regurgitation', p:{ARA:0.55,HR:115,SVR:1.0,Vol:650,k:0.038},
   tag:'Volume overload, sudden', summary:'Sudden severe AR (endocarditis, aortic dissection, trauma) dumps regurgitant blood into a normal-sized, non-compliant ventricle.',
-  bullets:['No true isovolumic relaxation or contraction: the LV fills from the aorta as soon as its pressure falls below aortic pressure, so the left side of the loop slopes rightward.','EDV rises only modestly, but it climbs the steep part of the normal EDPVR, so LVEDP rises sharply.','The LV can approach aortic diastolic pressure by end-diastole (diastolic pressure equalization) and close the mitral valve early. LA and pulmonary pressures rise and pulmonary edema follows.','Total SV rises, but forward SV per beat falls. Cardiac output is held up mainly by tachycardia, which also shortens diastole, the time available for regurgitation.','Pulse pressure is not very wide, unlike chronic AR.'],
-  try:'Lower the <b>heart rate</b> to 60 and watch regurgitant volume and LVEDP climb. This is why β-blockers are avoided in acute AR. Then try a <b>vasodilator</b>. Definitive treatment is urgent surgery.'},
+  bullets:['No true isovolumic relaxation or contraction: the LV fills from the aorta as soon as its pressure falls below aortic pressure, so the left side of the loop slopes rightward.','EDV rises only a little, but it climbs the steep part of a normal-sized, non-compliant EDPVR, so LVEDP rises sharply (about 35 mmHg here).','In the most severe cases LVEDP approaches aortic diastolic pressure by end-diastole (diastolic pressure equalization) and the mitral valve closes early. LA and pulmonary pressures rise and pulmonary edema follows.','Total SV rises, but forward SV falls. Patients are typically hypotensive and tachycardic; the tachycardia also shortens diastole, the time available for regurgitation.','Pulse pressure is only modestly widened (about 57 mmHg here), unlike the very wide pulse pressure of chronic AR.'],
+  try:'Lower the <b>heart rate</b> to 60: diastole lengthens, LVEDP and LA pressure climb, aortic diastolic pressure falls and forward output drops. This is why β-blockers are avoided in acute AR. Then try a <b>vasodilator</b>: forward SV rises. Definitive treatment is urgent surgery.'},
  {id:'chronicAR', group:'Valve disease', name:'Chronic aortic regurgitation', p:{ARA:0.35,V0:55,k:0.013,A:0.5,Ees:2.5,Vol:650,HR:72,Ela:0.15},
   tag:'Volume + pressure overload, compensated', summary:'Years of regurgitation produce eccentric hypertrophy: the LV dilates and becomes more compliant, so the EDPVR shifts rightward.',
-  bullets:['Very large EDV at a near-normal LVEDP, because the remodelled EDPVR is shifted right and flatter.','The largest total SV of any lesion, giving a wide, tall loop and high stroke work.','Wide pulse pressure: high systolic (large SV) and low diastolic (runoff back into the LV). This underlies the bounding pulses and other peripheral signs.','EF is maintained in the compensated phase. Falling EF or rising ESV marks decompensation and is an indication for surgery.'],
+  bullets:['Very large EDV at a near-normal LVEDP, because the remodelled EDPVR is shifted right and flatter.','One of the largest total SVs of any lesion, giving a wide, tall loop and high stroke work.','Wide pulse pressure: high systolic (large SV) and low diastolic (runoff back into the LV). This underlies the bounding pulses and other peripheral signs.','EF is maintained in the compensated phase. Falling EF or rising ESV marks decompensation: in severe AR, LVEF ≤55% or LV end-systolic diameter >50 mm is an indication for surgery even without symptoms (2020 ACC/AHA).'],
   try:'Lower <b>Ees</b> to about 1.5 to simulate decompensation: ESV grows, EF falls and LVEDP rises. Then compare it with acute AR on the same axes using <b>Snapshot</b>.'},
  {id:'acuteMR', group:'Valve disease', name:'Acute mitral regurgitation', p:{MRA:0.40,HR:100,SVR:1.25,Vol:640,Ela:0.40},
   tag:'Volume overload, sudden', summary:'Papillary muscle rupture, chordal rupture or endocarditis creates a low-resistance leak into a small, stiff left atrium.',
   bullets:['No isovolumic contraction: the LV starts ejecting into the LA as soon as its pressure exceeds LA pressure, so the right side of the loop slopes leftward.','ESV falls (two outflow paths, lower effective afterload). EF looks high but forward SV is low.','The non-compliant LA produces giant v waves and high pulmonary pressures, leading to flash pulmonary edema.','No isovolumic relaxation either: the LV is still unloading into the LA while it relaxes.'],
-  try:'Reduce <b>SVR</b> (afterload reduction with nitroprusside or an intra-aortic balloon pump): forward SV rises and the regurgitant fraction falls. Compare the LA trace with chronic MR.'},
+  try:'Reduce <b>SVR</b> to mimic afterload reduction with nitroprusside (an intra-aortic balloon pump does something similar by unloading the LV in systole): forward SV rises and the regurgitant fraction falls. Compare the LA trace with chronic MR.'},
  {id:'chronicMR', group:'Valve disease', name:'Chronic mitral regurgitation', p:{MRA:0.40,V0:35,k:0.015,Ees:2.8,Vol:720,Ela:0.07,Eaa:0.12},
   tag:'Volume overload, compensated', summary:'Gradual MR lets the LA and LV both dilate. The compliant LA absorbs the regurgitant volume at modest pressure.',
-  bullets:['Large EDV with low LVEDP, because the EDPVR is shifted right.','Large total SV split between forward flow and the LA. The loop is wide with sloping isovolumic phases.','LA mean pressure and v waves stay modest, because a large compliant atrium buffers the regurgitant volume.','EF is supranormal because the LV unloads into the low-pressure LA. An EF below about 60% already suggests contractile dysfunction.'],
+  bullets:['Large EDV with low LVEDP, because the EDPVR is shifted right.','Large total SV split between forward flow and the LA. The loop is wide with sloping isovolumic phases.','LA mean pressure and v waves stay modest, because a large compliant atrium buffers the regurgitant volume.','EF is supranormal because the LV unloads into the low-pressure LA. An EF of 60% or less (or LV end-systolic diameter ≥40 mm) already suggests contractile dysfunction and is an indication for surgery in severe MR (2020 ACC/AHA).'],
   try:'Increase <b>LA stiffness</b> to the acute-MR value (0.4) and watch the v wave and pulmonary pressure rise. That isolates the role of atrial compliance.'},
- {id:'AS', group:'Valve disease', name:'Aortic stenosis', p:{AVA:0.7,Ees:4.2,k:0.034,relax:1.6,Vol:610,Eaa:0.35},
+ {id:'AS', group:'Valve disease', name:'Aortic stenosis', p:{AVA:0.7,Ees:4.2,k:0.04,relax:2.2,Vol:610,Eaa:0.8},
   tag:'Pressure overload', summary:'A narrowed aortic valve (here 0.7 cm², severe) forces the LV to generate much higher pressure than the aorta during ejection.',
-  bullets:['Tall loop: LV systolic pressure far exceeds aortic systolic pressure, and the gap is the transvalvular gradient.','Concentric hypertrophy: a steeper ESPVR (higher Ees) preserves SV and EF despite the load.','The hypertrophied wall is stiff and relaxes slowly. The EDPVR is steeper and LVEDP is raised.','Filling depends heavily on the atrial kick. Loss of sinus rhythm can cause sudden decompensation.','Stroke work and myocardial oxygen demand are high, which explains the angina even with normal coronaries.'],
-  try:'Set <b>atrial contraction</b> to 0 (atrial fibrillation) and watch SV and blood pressure drop. Then reduce <b>preload</b>: SV falls steeply. Patients with AS are preload-dependent, so vasodilators and diuretics need care.'},
+  bullets:['Tall loop: LV systolic pressure far exceeds aortic systolic pressure. The gap between the two peaks is the peak-to-peak gradient measured at cath; the Doppler peak instantaneous gradient in the table is larger.','Concentric hypertrophy: a steeper ESPVR (higher Ees) preserves SV and EF despite the load.','The hypertrophied wall is stiff and relaxes slowly. The EDPVR is steeper and LVEDP is raised.','Because early filling is impaired, much more of the filling depends on the atrial kick. Loss of sinus rhythm can cause sudden decompensation.','Stroke work and myocardial oxygen demand are high, which explains the angina even with normal coronaries.'],
+  try:'Set <b>atrial contraction</b> to 0 (atrial fibrillation): SV falls by about 10% and LA pressure rises, against about 3% in the Normal scenario. Then restore it and press <b>Volume loss</b>: LVEDP falls from about 21 to 12 mmHg and SV and blood pressure fall. The stiff ventricle needs a high filling pressure, so diuretics and vasodilators need care.'},
  {id:'MS', group:'Valve disease', name:'Mitral stenosis', p:{MVA:1.0,Ela:0.25,Eaa:0.2,Vol:640,HR:80},
   tag:'Inflow obstruction', summary:'A narrowed mitral valve (here 1.0 cm², severe) limits LV filling. The LV itself is usually normal.',
-  bullets:['Small, underfilled loop: EDV, LVEDP and SV are all reduced.','LA pressure is high, with a large diastolic gradient across the mitral valve. This drives pulmonary venous hypertension and eventually pulmonary arterial hypertension.','Contractility is normal, so ESV sits on a normal ESPVR.','Tachycardia shortens diastole and worsens the gradient, which is why AF and exercise are poorly tolerated.'],
+  bullets:['Small, underfilled loop: EDV, LVEDP and SV are all reduced.','LA pressure is high, with a large diastolic gradient across the mitral valve. This drives post-capillary pulmonary hypertension, and later a pre-capillary component as the pulmonary vessels remodel.','Contractility is normal, so ESV sits on a normal ESPVR.','Tachycardia shortens diastole and worsens the gradient, which is why AF and exercise are poorly tolerated.'],
   try:'Increase <b>heart rate</b> to 130 and watch the mitral gradient and LA pressure rise while EDV falls. Rate control (β-blockers) helps in MS.'},
  {id:'DCM', group:'Cardiomyopathy & heart failure', name:'Dilated cardiomyopathy / HFrEF', p:{Ees:0.7,V0:70,k:0.017,Vol:730,SVR:1.3,HR:90,relax:1.3},
   tag:'Systolic dysfunction', summary:'Loss of contractility with eccentric remodelling: the ESPVR flattens and the whole loop shifts far to the right.',
-  bullets:['Low Ees, so ESV is very large and EF is low (around 15–25%).','The EDPVR is shifted right by remodelling, so EDV is huge. SV is maintained partly by the Frank–Starling mechanism, at the price of raised filling pressures.','The flat ESPVR makes SV very sensitive to afterload, which is why vasodilators (ACE inhibitors, ARNI, hydralazine) raise output.','Neurohormonal compensation: tachycardia, high SVR and volume retention.'],
+  bullets:['Low Ees, so ESV is very large and EF is low (around 15–25%).','The EDPVR is shifted right by remodelling, so EDV is huge. SV is maintained partly by the Frank–Starling mechanism, at the price of raised filling pressures.','The flat ESPVR makes SV very sensitive to afterload, which is why acute afterload reduction (nitroprusside, hydralazine) raises output. ACE inhibitors, ARNI and other disease-modifying drugs help mainly by blocking neurohormonal activation and remodelling.','Neurohormonal compensation: tachycardia, high SVR and volume retention.'],
   try:'Apply the <b>vasodilator</b> intervention and compare with normal. SV rises much more than it would in a healthy heart. Then try the <b>inotrope</b>.'},
  {id:'HFpEF', group:'Cardiomyopathy & heart failure', name:'HFpEF / diastolic dysfunction', p:{Ees:4.2,k:0.045,relax:1.8,Ca:0.7,SVR:1.3,Vol:615},
   tag:'Diastolic dysfunction', summary:'A stiff, slowly relaxing ventricle needs high filling pressure to reach a normal volume. EF is preserved.',
-  bullets:['The EDPVR is steep and shifted up and left. LVEDP is high at a normal or small EDV.','Slow relaxation (high τ) raises early-diastolic pressures.','Ventricular-arterial stiffening (high Ees and Ea, stiff arteries) gives labile blood pressure.','Very preload-sensitive: small volume changes cause big pressure swings, so patients flip between pulmonary edema and hypotension.','Tachycardia is poorly tolerated because relaxation is incomplete when diastole is short.'],
-  try:'Add <b>fluid +250 mL</b>: LVEDP jumps far more than in a normal heart. Then raise <b>HR</b> to 120 and watch filling fall.'},
+  bullets:['The EDPVR is steep and shifted up and left. LVEDP is high at a normal or small EDV.','Slow relaxation (high τ) raises early-diastolic pressures.','Ventricular-arterial stiffening (high Ees and Ea, stiff arteries) gives labile blood pressure.','Very preload-sensitive: small volume changes cause big pressure swings, so patients flip between pulmonary edema and hypotension.','Tachycardia is poorly tolerated: the short diastole cuts filling, and when relaxation is very slow it no longer finishes before the next beat. In real exercise, venous return also rises, so LA pressure climbs steeply.'],
+  try:'Press <b>Fluid bolus</b>: LVEDP jumps by about 10 mmHg, against about 4 mmHg in a normal heart. Then raise <b>HR</b> to 120: EDV and SV fall as filling time shortens. Finally set <b>relaxation</b> to 2.5× and HR to 140: relaxation is now incomplete, so LVEDP and LA pressure rise even though the ventricle holds less blood.'},
  {id:'HCM', group:'Cardiomyopathy & heart failure', name:'Hypertrophic cardiomyopathy (obstructive)', p:{Ees:5,V0:0,k:0.05,relax:2,AVA:1.0,MRA:0.1,Vol:615,SVR:1.2},
   tag:'Hypertrophy + LVOT obstruction', summary:'A thick, small, hyperdynamic ventricle with impaired relaxation and outflow obstruction, plus systolic anterior motion (SAM) causing some MR.',
   bullets:['Small cavity and very high EF. ESV approaches zero (cavity obliteration).','Steep EDPVR and slow relaxation give high LVEDP despite small volumes.','LV systolic pressure is far above aortic pressure because of the LVOT gradient. In this model it is a fixed narrowing; in reality it is dynamic.','Real obstruction worsens with less preload, less afterload or more contractility, which shrink the LV cavity.'],
-  try:'Simulate dynamic obstruction by hand: reduce <b>aortic valve area</b> to 0.6 as you lower <b>preload</b> (dehydration) or raise <b>Ees</b>. Treatment uses β-blockers, volume and phenylephrine, and avoids inotropes and vasodilators.'},
+  try:'Simulate dynamic obstruction by hand: reduce <b>aortic valve area</b> to 0.6 as you lower <b>preload</b> (dehydration) or raise <b>Ees</b>. Acute treatment uses β-blockers, volume and phenylephrine, and avoids inotropes and vasodilators. Long-term options include cardiac myosin inhibitors (mavacamten) and septal reduction therapy (2024 AHA/ACC).'},
  {id:'RCM', group:'Cardiomyopathy & heart failure', name:'Restrictive cardiomyopathy', p:{Ees:2.5,k:0.055,relax:1.5,Vol:700,HR:85,Ela:0.25,Eaa:0.15},
   tag:'Severe stiffness', summary:'Infiltrative disease (amyloidosis, sarcoidosis, hemochromatosis) makes the myocardium extremely stiff. Systolic function is relatively preserved until late.',
-  bullets:['A very steep EDPVR: small EDV with very high filling pressures.','Rapid early filling that stops abruptly gives the dip-and-plateau LV pressure waveform.','Small, low-SV loop at near-normal EF. Cardiac output is rate-dependent and limited.','High LA and pulmonary pressures, with biatrial enlargement clinically.'],
+  bullets:['A very steep EDPVR: small EDV with very high filling pressures.','Rapid early filling that stops abruptly gives a dip-and-plateau LV pressure waveform. It is classic for constrictive pericarditis and also seen in RCM; this model only approximates it.','Small, low-SV loop at near-normal EF. Cardiac output is rate-dependent and limited.','High LA and pulmonary pressures, with biatrial enlargement clinically.'],
   try:'Change <b>preload</b> in both directions: there is little room between congestion and low output. Compare the shape with HFpEF using <b>Snapshot</b>.'},
- {id:'shock', group:'Cardiomyopathy & heart failure', name:'Acute MI / cardiogenic shock', p:{Ees:0.9,k:0.03,HR:110,SVR:1.3,Vol:650},
+ {id:'shock', group:'Cardiomyopathy & heart failure', name:'Acute MI / cardiogenic shock', p:{Ees:0.75,k:0.03,HR:110,SVR:1.25,Vol:620},
   tag:'Acute systolic failure', summary:'A large infarct abruptly reduces contractility before any remodelling has happened.',
   bullets:['The ESPVR flattens suddenly. ESV and EDV rise, and SV and EF fall.','Without time to remodel, the ventricle climbs a normal or ischemically stiffened EDPVR, so LVEDP and pulmonary pressures rise quickly.','Hypotension with a narrow pulse pressure, compensatory tachycardia and vasoconstriction.','High SVR further reduces SV from a weak ventricle, creating a vicious cycle.'],
-  try:'Try the <b>inotrope</b> and the <b>vasopressor</b> separately. A pressor raises BP but shrinks SV. Lowering SVR (as an intra-aortic balloon pump effectively does) lifts SV.'},
+  try:'Try the <b>inotrope</b> and the <b>vasopressor</b> separately. A pressor raises BP but shrinks SV. Lowering SVR lifts SV but drops BP further, which is why afterload reduction needs a pressure reserve. (An intra-aortic balloon pump unloads the LV in systole and augments diastolic pressure, but did not reduce mortality in MI shock in IABP-SHOCK II.)'},
  {id:'HTN', group:'Cardiomyopathy & heart failure', name:'Chronic hypertension', p:{SVR:1.7,Ca:0.7,Ees:4,k:0.034,relax:1.3,Vol:600},
   tag:'Pressure overload', summary:'High SVR and stiff arteries raise afterload. The LV adapts with concentric hypertrophy.',
-  bullets:['Tall loop at high pressures. The steeper Ea line reflects high afterload.','A steeper ESPVR (concentric hypertrophy) keeps SV near normal (Ees/Ea coupling).','Stiff arteries (low compliance) widen pulse pressure, producing isolated systolic hypertension.','A stiffer, slower-relaxing LV sets the stage for HFpEF.'],
+  bullets:['Tall loop at high pressures. The steeper Ea line reflects high afterload.','A steeper ESPVR (concentric hypertrophy) keeps SV near normal (Ees/Ea coupling).','Stiff arteries (low compliance) widen pulse pressure. This preset shows systolic-diastolic hypertension; in older patients, arterial stiffening alone produces isolated systolic hypertension.','A stiffer, slower-relaxing LV sets the stage for HFpEF.'],
   try:'Lower <b>Ees</b> back to 3 while keeping SVR high to see SV fall without hypertrophic compensation.'},
- {id:'hemorrhage', group:'Circulation & rhythm', name:'Hemorrhage / hypovolemia', p:{Vol:420,HR:115,SVR:1.5,Ees:3.6},
+ {id:'hemorrhage', group:'Circulation & rhythm', name:'Hemorrhage / hypovolemia', p:{Vol:430,HR:115,SVR:1.5,Ees:6},
   tag:'Low preload', summary:'Loss of circulating volume. The ventricle itself is normal.',
-  bullets:['A small loop sliding down the EDPVR: low EDV, low LVEDP and low SV.','Narrow pulse pressure, tachycardia and vasoconstriction. Sympathetic tone also boosts contractility.','Cardiac output is maintained only partly by heart rate.'],
-  try:'Press <b>Fluid +250 mL</b> twice and watch the loop widen back toward normal along the same EDPVR.'},
+  bullets:['A small loop sliding down the EDPVR: low EDV, low LVEDP and low SV.','Narrow pulse pressure, tachycardia and vasoconstriction. Sympathetic tone also boosts contractility, so the small ventricle empties well (small ESV, hyperdynamic on echo).','Cardiac output is maintained only partly by heart rate.'],
+  try:'Press <b>Fluid bolus</b> twice: the loop widens along the same EDPVR, but blood pressure overshoots because this model has no baroreflex to withdraw the tachycardia and vasoconstriction. Then set <b>HR</b> to 75, <b>SVR</b> to 1.05 and <b>Ees</b> to 3 to mimic that withdrawal: the loop returns to normal.'},
  {id:'sepsis', group:'Circulation & rhythm', name:'Septic / vasodilatory shock', p:{SVR:0.5,HR:110,Ees:3.4,Vol:560,Ca:1.5},
   tag:'Low afterload', summary:'Profound vasodilation lowers SVR. Early (warm) sepsis has high output with low blood pressure.',
   bullets:['A low, flat Ea line. ESV is small and the loop sits at low pressure.','High cardiac output but low MAP and diastolic pressure.','Relative hypovolemia from venodilation and capillary leak.'],
@@ -434,11 +436,11 @@ const PRESETS = [
  {id:'AF', group:'Circulation & rhythm', name:'Atrial fibrillation (rapid)', p:{Eaa:0,HR:120},
   tag:'Loss of atrial kick', summary:'No coordinated atrial contraction, at a fast ventricular rate. Beat-to-beat irregularity is not modelled.',
   bullets:['Without the atrial kick and with a short diastole, EDV and SV fall.','Normal hearts tolerate this fairly well. Stiff ventricles (AS, HFpEF, HCM) and MS depend on the kick and on diastolic time, and can decompensate.'],
-  try:'Switch to the <b>Aortic stenosis</b> or <b>HFpEF</b> scenario, set atrial contraction to 0 and HR to 120, and compare the fall in SV with this scenario.'},
- {id:'inotrope', group:'Circulation & rhythm', name:'Positive inotrope / exercise', p:{Ees:4.5,HR:100,SVR:0.9,relax:0.8},
-  tag:'Sympathetic stimulation', summary:'Dobutamine or exercise raises contractility and heart rate and speeds relaxation (lusitropy), with mild vasodilation.',
-  bullets:['A steeper ESPVR pushes ESV left and raises EF.','Faster relaxation preserves filling despite the higher rate.','Cardiac output rises, mostly from heart rate.'],
-  try:'Compare stroke work and the efficiency (SW/PVA) with normal.'},
+  try:'Switch to the <b>Aortic stenosis</b> scenario, set atrial contraction to 0 and HR to 120, and compare with this scenario: SV falls further, blood pressure is lower and LA pressure is higher than in the normal heart.'},
+ {id:'inotrope', group:'Circulation & rhythm', name:'Exercise', p:{Ees:5.5,HR:120,SVR:0.6,relax:0.75,Vol:950},
+  tag:'Sympathetic stimulation', summary:'Moderate exercise raises contractility and heart rate, speeds relaxation (lusitropy), dilates muscle beds and, through venoconstriction and the muscle pump, raises venous return.',
+  bullets:['A steeper ESPVR pushes ESV left and raises EF.','Extra venous return (higher stressed volume) and faster relaxation keep EDV up despite the shorter diastole, so SV rises modestly.','Cardiac output roughly doubles, mostly from heart rate. Systolic pressure rises much more than diastolic pressure.'],
+  try:'Set <b>preload</b> back to 590 to remove the extra venous return: EDV and SV fall and blood pressure drops. This shows why the venous side matters as much as the heart. Also compare stroke work and SW/PVA with normal.'},
 ];
 
 const SLIDERS = [
@@ -453,9 +455,9 @@ const SLIDERS = [
  {k:'Ca', label:'Arterial compliance', min:0.3, max:3, step:0.05, unit:'mL/mmHg', d:2},
  {k:'HR', label:'Heart rate', min:40, max:180, step:1, unit:'bpm', d:0},
  {g:'Valves'},
- {k:'AVA', label:'Aortic valve area (stenosis)', min:0.4, max:4, step:0.05, unit:'cm²', d:2, extra:v=>v<1?'severe AS':v<1.5?'moderate AS':v<2?'mild AS':'normal'},
+ {k:'AVA', label:'Aortic valve area (stenosis)', min:0.4, max:4, step:0.05, unit:'cm²', d:2, extra:v=>v<=1?'severe AS':v<=1.5?'moderate AS':v<2?'mild AS':'normal'},
  {k:'ARA', label:'Aortic regurgitation (EROA)', min:0, max:0.8, step:0.01, unit:'cm²', d:2, extra:v=>v===0?'none':v<0.1?'mild':v<0.3?'moderate':'severe'},
- {k:'MVA', label:'Mitral valve area (stenosis)', min:0.6, max:5, step:0.05, unit:'cm²', d:2, extra:v=>v<=1?'severe MS':v<=1.5?'moderate MS':v<2.5?'mild MS':'normal'},
+ {k:'MVA', label:'Mitral valve area (stenosis)', min:0.6, max:5, step:0.05, unit:'cm²', d:2, extra:v=>v<=1?'very severe MS':v<=1.5?'severe MS':v<2.5?'progressive MS':'normal'},
  {k:'MRA', label:'Mitral regurgitation (EROA)', min:0, max:0.8, step:0.01, unit:'cm²', d:2, extra:v=>v===0?'none':v<0.2?'mild':v<0.4?'moderate':'severe'},
  {g:'Left atrium'},
  {k:'Ela', label:'LA stiffness (passive elastance)', min:0.04, max:0.6, step:0.01, unit:'mmHg/mL', d:2},
@@ -540,8 +542,8 @@ function setParams(np, fromPreset) {
 document.querySelectorAll('[data-iv]').forEach(b => b.onclick = () => {
   const np = Object.assign({}, P);
   switch (b.dataset.iv) {
-    case 'fluid': np.Vol += 250; break;
-    case 'bleed': np.Vol -= 250; break;
+    case 'fluid': np.Vol += 100; break;
+    case 'bleed': np.Vol -= 100; break;
     case 'vasodil': np.SVR *= 0.7; break;
     case 'pressor': np.SVR *= 1.3; break;
     case 'inotrope': np.Ees *= 1.4; break;
@@ -588,7 +590,7 @@ const ROWS = [
  ['LVSP','LV peak systolic pressure','mmHg',0],
  ['LVEDP','LV end-diastolic pressure','mmHg',0],
  ['LAP','Mean LA pressure','mmHg',0],
- ['LAmax','Peak LA pressure (v wave)','mmHg',0],
+ ['LAmax','Peak LA pressure (a or v wave)','mmHg',0],
  ['PAP','Mean pulmonary pressure','mmHg',0],
  ['AVg','Aortic valve gradient (peak/mean)','mmHg',0],
  ['MVmean','Mean mitral gradient','mmHg',1],
@@ -596,7 +598,7 @@ const ROWS = [
  ['CO','Cardiac output (forward)','L/min',1],
  ['SW','Stroke work (loop area)','mmHg·mL',0],
  ['SWJ','Stroke work','J',2],
- ['eff','Mechanical efficiency (SW/PVA)','%',0],
+ ['eff','Work efficiency (SW/PVA)','%',0],
  ['Ea','Arterial elastance Ea (ESP/SV)','mmHg/mL',2],
  ['coup','Coupling Ees/Ea','',2],
  ['dpdt','dP/dt max','mmHg/s',0],

@@ -275,7 +275,7 @@ slides: [
   prompt: "Which targets do you set?",
   options: [
     { t: "Keep FiO₂ 1.0 for maximal brain oxygen", fb: "Hyperoxia (PaO₂ well above normal) offers no benefit and may harm injured tissue. Titrate down as soon as SpO₂ can be measured reliably." },
-    { t: "SpO₂ 90–98%, PaCO₂ 35–45, MAP ≥65", ok: true, fb: "These are the 2025 AHA targets: MAP ≥65 and PaCO₂ 35–45 (Class 1), SpO₂ 90–98% (2a). <b>Glucose:</b> avoid <3.9 or >10 mmol/L, so his 14.8 needs insulin. In <b>BOX</b>, a higher MAP target (77 vs 63 mmHg) and a restrictive vs liberal oxygen target made no difference in death or severe disability, so avoid extremes rather than chase numbers." },
+    { t: "SpO₂ 90–98%, PaCO₂ 35–45, MAP ≥65", ok: true, fb: "These are the 2025 AHA targets: MAP ≥65 and PaCO₂ 35–45 (Class 1), SpO₂ 90–98% (2a). <b>Glucose</b> (a weaker 2b recommendation): avoid <3.9 or >10 mmol/L, so his 14.8 needs insulin. In <b>BOX</b>, a higher MAP target (77 vs 63 mmHg) and a restrictive vs liberal oxygen target made no difference in death or severe disability, so avoid extremes rather than chase numbers." },
     { t: "Hyperventilate to PaCO₂ 30 for brain swelling", fb: "Hypocapnia causes cerebral vasoconstriction and can worsen ischemia. Aim for normocapnia." },
     { t: "Permissive hypotension with a MAP of 55–60", fb: "Hypotension after ROSC is linked with worse neurological outcomes. Keep MAP at least 65." }
   ],
@@ -288,13 +288,13 @@ slides: [
     { t: "Keep 32–37.5 °C for at least 36 hours", ok: true, fb: "<b>AHA 2025:</b> keep temperature between 32 °C and 37.5 °C in adults who don't follow commands after ROSC (Class 1), for at least 36 hours (2a). The main goal is <b>no fever</b>. Use a feedback-controlled device if needed, and treat shivering." },
     { t: "Let him warm up; treat fever only if it occurs", fb: "Fever after cardiac arrest is common and linked to worse outcomes. Active prevention is needed in patients who don't follow commands." },
     { t: "Cool rapidly with 2 L of cold saline", fb: "Prehospital cold saline didn't improve outcomes and caused more re-arrest and pulmonary edema (Kim, JAMA 2014). Rapid large-volume cold fluids aren't recommended." },
-    { t: "Cool to 33 °C for 24 hours, then rewarm at 1 °C/h", fb: "The main problem is the <b>duration</b>: 24 hours is shorter than the ≥36 hours of temperature control. 33 °C is within the accepted range, and it may be reasonable to avoid rapid rewarming (AHA 2025, 2b). TTM and TTM2 found no benefit from 33 °C over 36 °C or over normothermia with fever prevention, and the Canadian CAPITAL CHILL trial found none for 31 °C over 34 °C." }
+    { t: "Cool to 33 °C for 24 hours, then rewarm at 1 °C/h", fb: "Two problems: 24 hours is shorter than the ≥36 hours of temperature control, and 1 °C/h is rapid rewarming (AHA 2025 suggests no faster than about 0.5 °C/h, 2b). 33 °C itself is within the accepted range. TTM and TTM2 found no benefit from 33 °C over 36 °C or over normothermia with fever prevention, and the Canadian CAPITAL CHILL trial found none for 31 °C over 34 °C." }
   ],
   explain: "<b>Also:</b> no routine seizure prophylaxis, but get an EEG if he has myoclonus or isn't waking. Treat clinical seizures. Use short-acting sedation so you can examine him.",
   notes: "<b>6:00–7:45.</b> Ask: what is the real enemy here? (Fever.)" },
 
-{ type: "decision", clock: "Day 2, 09:00", title: "The family meeting",
-  html: "<p>Temperature control ended on day 1 at 21:00, and sedation was stopped on day 1 at 22:00. He is normothermic. Today he has a motor response of extension to pain only, and his pupils react. His wife asks whether he will wake up. A consultant on another team says, \"GCS 4 at 36 hours. I'd withdraw.\"</p>",
+{ type: "decision", clock: "Day 3, 09:00", title: "The family meeting",
+  html: "<p>Temperature control ended on day 2 at 09:00 (36 hours after ROSC), and sedation was stopped on day 2 at 10:00. He is normothermic. Today he has a motor response of extension to pain only, and his pupils react. His wife asks whether he will wake up. A consultant on another team says, \"GCS 4 a day after stopping sedation. I'd withdraw.\"</p>",
   prompt: "What do you do?",
   options: [
     { t: "Recommend withdrawal of life support today", fb: "Too early, and based on one finding. A poor motor response at this stage can be due to residual sedation or organ dysfunction, and some of these patients recover." },
@@ -325,7 +325,7 @@ slides: [
 
 { type: "mcq",
   stem: "<p>A ventilated patient with darkly pigmented skin is 2 hours post-ROSC. SpO₂ 99% on FiO₂ 0.6. ABG: PaO₂ <b>165</b> mmHg, PaCO₂ 41.</p><p><b>What is the most appropriate oxygen plan?</b></p>",
-  options: ["Keep FiO₂ 0.6 for the first 24 hours", "Target SpO₂ 85–88% to limit reperfusion injury", "Target a PaO₂ of 150–200 mmHg", "Wean FiO₂ to SpO₂ 92–98%, checked by ABG", "Hyperventilate to PaCO₂ 30 to offset hypoxia"],
+  options: ["Keep FiO₂ 0.6 for the first 24 hours", "Target SpO₂ 85–88% to limit reperfusion injury", "Target a PaO₂ of 150–200 mmHg", "Wean FiO₂ to SpO₂ 90–98%, checked by ABG", "Hyperventilate to PaCO₂ 30 to offset hypoxia"],
   answer: 3,
   explain: "Titrate FiO₂ to an SpO₂ of <b>90–98%</b> (AHA 2025, 2a) and avoid hyperoxia. Pulse oximetry can <b>overestimate</b> oxygenation in people with darker skin, so aim for the middle-to-upper part of the range and confirm with arterial gases. An SpO₂ of 85–88% risks hypoxemia. A PaO₂ of 150–200 is hyperoxia. Hyperventilation causes cerebral vasoconstriction.",
   ref: "Hirsch KG et al. AHA 2025 Part 11; Schmidt H et al. NEJM 2022 (BOX)" },

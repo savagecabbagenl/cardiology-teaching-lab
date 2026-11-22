@@ -264,7 +264,7 @@ slides: [
     { t: "IV verapamil 5 mg for a probable SVT", fb: "In VT, verapamil causes vasodilation and negative inotropy, which can lead to <b>hemodynamic collapse</b>. Never give it for an undiagnosed WCT." },
     { t: "IV metoprolol 5 mg, repeated to 15 mg", fb: "Not effective for termination, and risky with LVEF 30%." },
     { t: "Adenosine 12 mg as the definitive therapy", fb: "Adenosine can be used <i>diagnostically</i> for a regular, monomorphic WCT when SVT with aberrancy is genuinely suspected, but it isn't a treatment for VT. With prior MI, assume VT." },
-    { t: "Synchronized cardioversion, sedated", ok: true, fb: "ESC 2022 and CCS/CHRS 2020: for stable WCT or VT, <b>synchronized DC cardioversion</b> is first-line where anesthetic risk is acceptable. For drugs: <b>procainamide</b> (no faster than 50 mg/min) beat amiodarone in PROCAMIO if LV function allows. With an <b>LVEF of 30%</b>, amiodarone is the more natural drug choice. AHA 2025 lists amiodarone, procainamide or sotalol (2b)." }
+    { t: "Synchronized cardioversion, sedated", ok: true, fb: "ESC 2022 and CCS/CHRS 2020: for stable WCT or VT, <b>synchronized DC cardioversion</b> is first-line where anesthetic risk is acceptable. For drugs: <b>procainamide</b> (no faster than 50 mg/min) beat amiodarone in PROCAMIO if LV function allows. ESC 2022 prefers procainamide (IIa) over amiodarone (IIb) even with structural disease; amiodarone is reasonable if HF is severe or the QT is long. AHA 2025 lists amiodarone, procainamide or sotalol (2b)." }
   ],
   explain: "<b>Unstable</b> (hypotension, shock, ischemic chest pain, acute HF, altered consciousness): <b>synchronized cardioversion now</b>. Pulseless: defibrillate per ACLS. Check K⁺ and Mg²⁺ and correct them.",
   notes: "<b>4:00–6:00.</b>" },
@@ -273,7 +273,7 @@ slides: [
   html: "<p>Troponin is minimally elevated with a flat pattern. Echo: LVEF 30% with an anterior aneurysm. No acute ischemia on angiography. K⁺ 4.2.</p>",
   prompt: "Best long-term plan?",
   options: [
-    { t: "ICD, plus first-line VT ablation", ok: true, fb: "Sustained VT with structural heart disease and no reversible cause is a class I indication for an <b>ICD</b> (ESC 2022, AHA 2017; CCS/CHRS 2026). Optimise HFrEF therapy. In ischemic cardiomyopathy with significant VT, the Canadian-led <b>VANISH2</b> trial showed <b>first-line catheter ablation</b> beat antiarrhythmic drugs (fewer deaths, storms, shocks and VT episodes combined, and fewer drug side effects)." },
+    { t: "ICD, plus first-line VT ablation", ok: true, fb: "Sustained VT with structural heart disease and no reversible cause is a class I indication for an <b>ICD</b> (ESC 2022, AHA 2017; CCS/CHRS 2026). Optimise HFrEF therapy. In ischemic cardiomyopathy with significant VT, the Canadian-led <b>VANISH2</b> trial showed <b>first-line catheter ablation</b> beat antiarrhythmic drugs (a lower composite of death, VT storm, appropriate shocks and treated VT, with no mortality benefit on its own, and fewer drug side effects)." },
     { t: "Oral amiodarone alone, with no device", fb: "Antiarrhythmics reduce recurrences but don't match an ICD for survival after sustained VT with structural heart disease (AVID, CIDS, CASH)." },
     { t: "Discharge on amiodarone and arrange a Holter", fb: "He has had sustained VT. This is a high-risk patient." },
     { t: "Wearable defibrillator; ICD only if it recurs", fb: "Waiting for a second, possibly fatal, event isn't acceptable." }
@@ -318,7 +318,7 @@ slides: [
   stem: "<p>A 70-year-old man with a prior anterior MI has a regular wide-complex tachycardia at 150 bpm, BP 110/70. ECG: RBBB-like pattern, QRS 150 ms, <b>rS in V6</b> (R/S <1), <b>northwest axis</b>. He is alert.</p><p><b>What is the diagnosis and the most appropriate next step?</b></p>",
   options: ["VT; synchronized cardioversion", "SVT with aberrancy; adenosine 6 mg rapid push", "SVT with RBBB; IV diltiazem 0.25 mg/kg", "Sinus tachycardia with RBBB; IV fluid bolus", "Atrial flutter with aberrancy; IV metoprolol"],
   answer: 0,
-  explain: "Prior MI, a northwest axis and an R/S ratio under 1 in V6 with an RBBB-like pattern all point to <b>VT</b> (Brugada morphology criteria). He is stable, so synchronized cardioversion under sedation (or an antiarrhythmic) is appropriate. Adenosine, diltiazem and metoprolol all assume SVT, and calcium-channel blockers can cause collapse in VT. Sinus tachycardia doesn't run regularly at exactly 150 with this axis.",
+  explain: "Prior MI, a northwest axis and an R/S ratio under 1 in V6 with an RBBB-like pattern all point to <b>VT</b> (Brugada morphology criteria). He is stable, so synchronized cardioversion under sedation (or an antiarrhythmic) is appropriate. Adenosine, diltiazem and metoprolol all assume SVT, and calcium-channel blockers can cause collapse in VT. A regular rate of 150 should make you think of flutter, but the prior MI, northwest axis and V6 R/S <1 point to VT.",
   ref: "Zeppenfeld K et al. ESC VA 2022; Brugada P et al. Circulation 1991" },
 
 { type: "mcq",

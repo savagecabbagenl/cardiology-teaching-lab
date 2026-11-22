@@ -239,9 +239,9 @@ slides: [
   html: "<p>Creatinine 118 µmol/L, K⁺ 4.4, Na⁺ 134, NT-proBNP 6800 pg/mL. CXR: interstitial edema, small effusions. ECG: sinus, old anterior Q waves, no acute change. hs-troponin low and flat.</p>",
   prompt: "Which IV furosemide regimen?",
   options: [
-    { t: "Furosemide 40 mg IV once daily, since IV is twice as potent", fb: "40 mg IV daily is only half her daily home dose in milligrams. Guidelines start at 1–2.5 × the oral daily dose, mg for mg, given IV, on purpose: her gut is edematous and she is already failing 80 mg/day. Under-dosing is the most common error." },
+    { t: "Furosemide 40 mg IV once daily, since IV is twice as potent", fb: "40 mg IV daily is only half her daily home dose in milligrams. Guidelines start at 1–2 × the oral daily dose (ESC; ACC/AHA: at least 1 ×), mg for mg, given IV, on purpose: her gut is edematous and she is already failing 80 mg/day. Under-dosing is the most common error." },
     { t: "Furosemide infusion at 5 mg/h, with no bolus", fb: "In DOSE, bolus and continuous infusion gave similar outcomes. Either is fine if the <b>total dose</b> is adequate. 5 mg/h is too low." },
-    { t: "Furosemide 80 mg IV twice daily", ok: true, fb: "That is 160 mg/day, 2 × her total daily oral dose of 80 mg. It matches DOSE and ESC/AHA practice: start at 1–2.5 times the home daily dose (here 80–200 mg/day, or 40–100 mg IV twice daily), given IV in divided doses. In DOSE, the high-dose strategy gave more decongestion with only transient creatinine changes." },
+    { t: "Furosemide 80 mg IV twice daily", ok: true, fb: "That is 160 mg/day, 2 × her total daily oral dose of 80 mg. It fits ESC practice (1–2 × the home daily dose, here 80–160 mg/day) and sits between the DOSE arms (1 × and 2.5 ×), given IV in divided doses. In DOSE, the high-dose strategy gave more decongestion with only transient creatinine changes." },
     { t: "Hold diuretics until the creatinine is known to be stable", fb: "Congestion itself (venous congestion of the kidney) worsens renal function. Decongestion is the treatment." }
   ],
   explain: "<b>Also:</b> stop the NSAID. <b>Continue</b> bisoprolol and ramipril unless she has hypotension, hypoperfusion or significant hyperkalemia or AKI (withdrawing GDMT raises later risk). Give oxygen if SpO₂ <90%. With RR >25 and SpO₂ at 90%, <b>consider NIV</b> (CPAP or BiPAP) if she tires or desaturates. Avoid routine morphine. Start VTE prophylaxis.",
@@ -256,7 +256,7 @@ slides: [
     { t: "Add IV albumin 25 g with the next dose", fb: "No good evidence for routine albumin to enhance diuresis." },
     { t: "Start dopamine at 2 µg/kg/min", fb: "Low-dose dopamine didn't improve decongestion or renal function (ROSE-AHF)." }
   ],
-  explain: "<b>Natriuresis-guided diuresis</b> (ESC 2021/2023; HFA position paper): check urine Na⁺ at 2 h and urine output at 6 h, then adjust the dose the <i>same day</i>. Target: net negative 1–2 L/day until euvolemic. It speeds decongestion, but outcome benefit isn't proven (PUSH-AHF: more natriuresis, no difference in death or HF readmission at 180 days).",
+  explain: "<b>Natriuresis-guided diuresis</b> (ESC 2021; HFA 2019 position paper): check urine Na⁺ at 2 h and urine output at 6 h, then adjust the dose the <i>same day</i>. Target: net negative 1–2 L/day until euvolemic. It speeds decongestion, but outcome benefit isn't proven (PUSH-AHF: more natriuresis, no difference in death or HF readmission at 180 days).",
   notes: "<b>4:30–6:00.</b>" },
 
 { type: "decision", clock: "Day 3", title: "Creatinine has risen from 118 to 146",
@@ -288,7 +288,7 @@ slides: [
   steps: [
     "<b>Euvolemic</b> (JVP normal, no edema, no orthopnea) on an <b>oral diuretic dose tested for 24 h</b>. Record her dry weight.",
     "<b>Start or optimise the four pillars in hospital:</b> switch ramipril to sacubitril/valsartan (36-h washout), continue bisoprolol, add spironolactone and an SGLT2 inhibitor (in-hospital starts are safe and beneficial: <b>PIONEER-HF</b> for sacubitril/valsartan, <b>EMPULSE</b> for empagliflozin).",
-    "<b>Rapid up-titration</b> after discharge, with visits every 1–2 weeks (STRONG-HF: fewer deaths and HF readmissions at 180 days).",
+    "<b>Rapid up-titration</b> after discharge, with visits every 1–2 weeks (STRONG-HF: fewer of the combined death or HF readmission at 180 days, driven by readmissions).",
     "<b>Follow-up within 7–14 days</b> (CCS/CHFS), labs within 1 week, HF clinic, home care, daily weights with a diuretic action plan, and no NSAIDs.",
     { style: "pearl", html: "<b>Also screen:</b> iron studies (IV iron if ferritin <100 µg/L, or 100–299 with TSAT <20%), ischemia evaluation where appropriate, and advance care planning conversations." }
   ],
@@ -327,7 +327,7 @@ slides: [
 { type: "summary",
   pearls: [
     "Profile every ADHF patient: <b>warm or cold, wet or dry</b>. Hunt the precipitant (NSAIDs, salt, ischemia, arrhythmia, infection).",
-    "<b>IV loop dose = 1–2.5 × the home daily oral dose.</b> Bolus or infusion doesn't matter. The total dose does.",
+    "<b>IV loop dose = 1–2 × the home daily oral dose</b> (ESC; DOSE tested 1 × vs 2.5 ×). Bolus or infusion doesn't matter. The total dose does.",
     "<b>Check natriuresis at 2 h</b> (urine Na⁺ <50–70 means double the dose). Act the same day.",
     "A <b>creatinine rise while decongesting</b> is usually fine. Leaving her congested isn't. Add acetazolamide or a thiazide for resistance.",
     "Discharge <b>euvolemic, on four-pillar GDMT</b>, and seen within 7–14 days."

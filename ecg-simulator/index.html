@@ -73,6 +73,10 @@ button.primary{ background:var(--accent); color:#fff; border-color:var(--accent)
 .meas span{ display:block; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); }
 .meas b{ font-family:var(--font-mono); font-weight:600; font-size:16px; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
 .meas b small{ font-size:11px; color:var(--muted); font-weight:400; }
+.qtc-all{ margin:0; padding:6px 12px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--line); line-height:1.6; }
+.qtc-all b{ color:var(--fg); font-family:var(--font-mono); font-weight:600; }
+.qtc-all span[title]{ white-space:nowrap; cursor:help; }
+.qtc-note{ color:var(--accent); }
 .paper-wrap{ overflow-x:auto; background:var(--paper); }
 canvas{ display:block; width:100%; }
 .monitor{ background:var(--mon-bg); position:relative; }
@@ -160,6 +164,7 @@ canvas{ display:block; width:100%; }
       <div><span>QTc ms</span><b id="m-qtc">—</b></div>
       <div><span>Axis</span><b id="m-axis">—</b></div>
     </div>
+    <p class="qtc-all" id="qtc-all" aria-live="polite"></p>
     <div class="paper-wrap"><canvas id="cv12" role="img" aria-label="Simulated 12-lead ECG with rhythm strip and ladder diagram"></canvas></div>
   </article>
 
@@ -184,7 +189,7 @@ canvas{ display:block; width:100%; }
       <section id="info-pm-wrap"><div class="eyebrow">Pacemaker</div><h4 id="info-pm-name"></h4><ul id="info-pm"></ul></section>
       <section id="info-p-wrap"><div class="eyebrow">Pathology</div><h4 id="info-p-name"></h4><ul id="info-p"></ul></section>
     </div>
-    <p class="note">How it works: each beat is built as a 3-D cardiac dipole (P, QRS, ST, T and U components) and projected onto real lead vectors, so axis changes, reciprocal ST changes and lead reversals follow from geometry rather than being drawn per lead. Timing comes from an event model of the sinus node, AV node (refractory period with decremental recovery and concealed conduction), His–Purkinje system, accessory pathway and ventricular foci. The ladder diagram is drawn from the same events. QTc uses Bazett. This is a teaching model, not a diagnostic tool.</p>
+    <p class="note">How it works: each beat is built as a 3-D cardiac dipole (P, QRS, ST, T and U components) and projected onto real lead vectors, so axis changes, reciprocal ST changes and lead reversals follow from geometry rather than being drawn per lead. Timing comes from an event model of the sinus node, AV node (refractory period with decremental recovery and concealed conduction), His–Purkinje system, accessory pathway and ventricular foci. The ladder diagram is drawn from the same events. QTc on the slider and in the header uses Bazett; the line under the measurements gives Bazett, Fridericia, Framingham, Hodges and Rautaharju for the same beat. This is a teaching model, not a diagnostic tool.</p>
   </article>
 </main>
 </div>
@@ -646,11 +651,12 @@ const RHYTHMS = {
   vt: { group: 'Ventricular', name: 'Monomorphic VT', atrial: 'sinus', auto: 'vt', preset: { rate: 80, vrate: 170 }, features: [
     'Regular broad-complex tachycardia, QRS > 120 ms (often > 160 ms).',
     'AV dissociation: P waves march through at a slower rate (shown in the ladder). Capture and fusion beats are diagnostic.',
+    'Watch for them here: a capture beat (C on the ladder) is an early, narrow, normal-looking QRS conducted from a sinus P; a fusion beat (F) has an intermediate shape because the sinus wavefront and the VT focus activate the ventricles together.',
     'Extreme (northwest) axis, concordance across the chest leads, and RBBB- or LBBB-like morphologies.',
     'Assume VT for any regular broad-complex tachycardia until proven otherwise.'] },
   aivr: { group: 'Ventricular', name: 'Accelerated idioventricular rhythm', atrial: 'sinus', auto: 'aivr', preset: { rate: 68, vrate: 82 }, features: [
     'Regular wide-complex rhythm at 50–110 /min, slightly faster than the sinus rate.',
-    'AV dissociation with fusion beats at transitions.',
+    'AV dissociation with capture (C) and fusion (F) beats at transitions, labelled on the ladder.',
     'Classic reperfusion rhythm after thrombolysis or PCI; usually benign and self-limited.'] },
   tdp: { group: 'Ventricular', name: 'Torsades de pointes', atrial: 'none', auto: 'tdp', preset: { vrate: 230, qtc: 560 }, features: [
     'Polymorphic VT with QRS amplitude and axis twisting around the baseline.',
@@ -1130,6 +1136,19 @@ class Sim {
     const bbERP = 0.27 + 0.13*this.prevRR;
     const aberrant = pv.kind === 'cond' && ['cond','aber','ap'].includes(this.lastVkind) && coupling < bbERP && coupling < 0.5;
     const m = buildConducted(this.e, { rr: coupling, aberrant, preexc: pv.preexc });
+    const au = this.r.auto;
+    if ((au === 'vt' || au === 'aivr') && pv.kind === 'cond'){
+      const lead = this.nextAuto - t;
+      if (lead >= 0 && lead < 0.05){ // focus fires while the conducted wavefront is spreading: fusion beat
+        const tA = this.nextAuto;
+        const mv = buildVentricular(au, this.e, { rr: coupling, t: tA });
+        this.addV({ t, kind: 'fus', src: pv.src, m: fuseMorph(m, mv, lead), tNode: pv.tNode });
+        this.nextAuto = tA + this.autoCycle();
+        return;
+      }
+      this.addV({ t, kind: 'cap', src: pv.src, m, tNode: pv.tNode }); // capture beat: narrow, early
+      return;
+    }
     this.addV({ t, kind: aberrant ? 'aber' : pv.kind, src: pv.src, m, tNode: pv.tNode });
   }
   addV(v){
@@ -1184,7 +1203,7 @@ class Sim {
         this.atr.push(a); this.atr.sort((x, y) => x.t - y.t); v.retro = a;
       }
     }
-    if (kind === 'vt' || kind === 'aivr' || kind === 'escV' || kind === 'tdp') this.lastNodeExit = Math.max(this.lastNodeExit, t + 0.1);
+    if (kind === 'escV' || kind === 'tdp' || (kind === 'vt' && this.rand() < 0.3) || (kind === 'aivr' && this.rand() < 0.6)) this.lastNodeExit = Math.max(this.lastNodeExit, t + 0.1); // retrograde concealment (intermittent in VT/AIVR, so sinus beats occasionally capture)
     this.addV(v);
   }
 }
@@ -1553,7 +1572,8 @@ function drawLadder(g, sim, t0, t1, xs, pxs, y0, h, col){
   const vs = cand(sim.ven);
   vs.forEach((v, i) => {
     const xv = X(v.t);
-    if (v.kind === 'cond' || v.kind === 'aber' || v.kind === 'ap'){ line(xv, V0, X(v.t + 0.05), V1, v.kind === 'ap' ? ap : ink); if (v.kind === 'aber'){ g.fillStyle = col.label; g.fillText('ab', X(v.t + 0.05) + 9, V0 + th*0.5); } }
+    if (v.kind === 'cond' || v.kind === 'aber' || v.kind === 'ap' || v.kind === 'cap'){ line(xv, V0, X(v.t + 0.05), V1, v.kind === 'ap' ? ap : ink); if (v.kind === 'aber' || v.kind === 'cap'){ g.fillStyle = col.label; g.fillText(v.kind === 'cap' ? 'C' : 'ab', X(v.t + 0.05) + 9, V0 + th*0.5); } }
+    else if (v.kind === 'fus'){ line(xv, V0, X(v.t + 0.03), V0 + th*0.5, ink); const ox = X(v.t + 0.02), oy = V0 + th*0.72; dot(ox, oy, ink); line(ox, oy, X(v.t + 0.03), V0 + th*0.5, ink); line(ox, oy, X(v.t + 0.06), V1, ink); g.fillStyle = col.label; g.fillText('F', X(v.t + 0.06) + 9, V0 + th*0.5); }
     else if (v.kind === 'junc' || v.kind === 'escJ' || v.kind === 'avnrt'){
       if (v.kind === 'avnrt'){
         line(xv, V0, X(v.t + 0.035), A1, ink); // fast pathway up
@@ -1600,6 +1620,13 @@ function drawLadder(g, sim, t0, t1, xs, pxs, y0, h, col){
 }
 
 // ---------- measurements ----------
+const QTC_INFO = {
+  Bazett: 'QT / √RR (1920). Most widely used; over-corrects at fast and under-corrects at slow heart rates.',
+  Fridericia: 'QT / ∛RR (1920). Better across heart rates; preferred for drug QT monitoring.',
+  Framingham: 'QT + 0.154 × (1 − RR) s (Sagie 1992, linear).',
+  Hodges: 'QT + 1.75 × (HR − 60) ms (Hodges 1983, linear).',
+  Rautaharju: 'QT × (120 + HR) / 180 (Rautaharju 2014).',
+};
 function measure(){
   const vs = sim12.ven.filter(v => v.t >= 0 && v.t <= 10);
   const rr = []; for (let i = 1; i < vs.length; i++) rr.push(vs[i].t - vs[i-1].t);
@@ -1619,16 +1646,22 @@ function measure(){
     for (const v of vs){ if (!v.paced) continue; const pa = sim12.atr.filter(x => x.t < v.t && x.t > v.t - 0.4 && x.kind !== 'af' && !x.pvarp).pop(); if (pa) avd.push(Math.round((v.t - pa.t)*1000)); }
     if (avd.length){ const mn = Math.min(...avd), mx = Math.max(...avd); prTxt = 'AV ' + (mx - mn > 15 ? `${mn}–${mx}` : mn); }
   }
-  const beat = vs.find((v, i) => i > 0 && v.m && (v.kind === 'cond' || v.kind === 'ap')) || vs.find((v, i) => i > 0 && v.m) || vs[0];
-  let qrs = '—', qt = '—', qtc = '—', ax = '—';
+  const focus = (r.auto === 'vt' || r.auto === 'aivr') ? r.auto : null;
+  const beat = (focus && vs.find((v, i) => i > 0 && v.m && v.kind === focus)) || vs.find((v, i) => i > 0 && v.m && (v.kind === 'cond' || v.kind === 'ap')) || vs.find((v, i) => i > 0 && v.m) || vs[0];
+  let qrs = '—', qt = '—', qtc = '—', ax = '—', qtcAll = null, qtcHR = 0;
   if (beat && beat.m && r.auto !== 'vf'){
     qrs = Math.round(beat.m.D*1000);
     const idx = vs.indexOf(beat); const prr = idx > 0 ? beat.t - vs[idx-1].t : 60/P.rate;
     qt = Math.round(beat.m.QT*1000); qtc = Math.round(beat.m.QT/Math.sqrt(prr)*1000);
+    const QTs = beat.m.QT, hr = 60/prr; qtcHR = Math.round(hr);
+    qtcAll = [['Bazett', QTs/Math.sqrt(prr)], ['Fridericia', QTs/Math.cbrt(prr)], ['Framingham', QTs + 0.154*(1 - prr)], ['Hodges', QTs + 0.00175*(hr - 60)], ['Rautaharju', QTs*(120 + hr)/180]].map(([n, v]) => [n, Math.round(v*1000)]);
     ax = measureAxis(beat.m); ax = (ax > 0 ? '+' : '') + ax + '°';
   }
   if (r.auto === 'vf'){ qrs = qt = qtc = ax = '—'; }
   const set = (id, v) => { $(id).textContent = v; };
+  const qa = $('qtc-all');
+  if (qtcAll && !['vf','vt','tdp'].includes(r.auto)){ const hrNow = qtcHR; qa.innerHTML = `<b>QTc by formula</b> (QT ${qt} ms, HR ${hrNow}/min): ` + qtcAll.map(([n, v]) => `<span title="${QTC_INFO[n]}">${n} <b>${v}</b></span>`).join(' · ') + `<span class="qtc-note">${hrNow > 90 ? ' Bazett over-corrects at this rate; prefer Fridericia or Framingham.' : hrNow < 60 ? ' Bazett under-corrects at this rate.' : ''}</span>`; }
+  else qa.textContent = '';
   set('m-vrate', vrate); set('m-arate', arate); set('m-pr', prTxt); set('m-qrs', qrs); set('m-qt', qt); set('m-qtc', qtc); set('m-axis', ax);
 }
 

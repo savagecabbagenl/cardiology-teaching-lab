@@ -108,12 +108,15 @@ body{margin:0}
   const g=(t,m,s,a)=>a*Math.exp(-((t-m)**2)/(2*s*s));
   function beat(t){t=t%0.833;return g(t,.12,.025,.12)+g(t,.255,.008,-.12)+g(t,.28,.01,1)+g(t,.305,.009,-.25)+g(t,.52,.045,.28)}
   const col=()=>getComputedStyle(document.documentElement).getPropertyValue('--trace').trim();
-  let off=0;
-  function draw(){
+  const SPEED=50; // px per second, time-based so it is the same on 60 Hz and 120 Hz screens
+  let off=0,last=0;
+  function draw(now){
+    if(now&&last)off+=SPEED*Math.min(now-last,100)/1000;
+    last=now||0;
     x.clearRect(0,0,w,h);x.strokeStyle=col();x.lineWidth=1.6;x.beginPath();
     for(let px=0;px<=w;px++){const t=(px+off)/220;const y=h*.68-beat(t)*h*.55;px?x.lineTo(px,y):x.moveTo(px,y)}
     x.stroke();
-    if(!reduce){off+=2;requestAnimationFrame(draw)}
+    if(!reduce)requestAnimationFrame(draw)
   }
   draw();
 })();

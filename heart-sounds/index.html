@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Heart Sounds Simulator</title>
-<meta name="description" content="Synthesised heart sounds and murmurs with a live phonocardiogram: normal, mitral regurgitation, mitral stenosis and mitral valve prolapse.">
+<meta name="description" content="Synthesised heart sounds and murmurs for 15 conditions, with a chest map of the auscultation areas and a live phonocardiogram.">
 <meta name="theme-color" content="#14202b">
 <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
@@ -13,49 +13,52 @@
 :root{
   --bg:#f6f7f8; --panel:#ffffff; --fg:#14202b; --muted:#5a6772; --line:#d9dfe4; --chip:#eef1f3;
   --accent:#c2273b; --accent-fg:#ffffff; --good:#1f8a5b; --bad:#b4232f;
+  --skin:#f1e4da; --skin-line:#c9b2a3; --rib:#d8c6ba; --heart:#e9b8b8;
   --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   /* the monitor is always dark, like a bedside monitor */
   --mon-bg:#0b1216; --mon-grid:#16242c; --mon-grid2:#1d3039; --mon-text:#8fa3ae;
-  --ecg:#4fe39a; --pcg:#ffd166; --mur:#ff6b7a; --evt:#e6edf2; --cursor:#ffffff;
+  --ecg:#4fe39a; --pcg:#ffd166; --mur:#ff6b7a; --evt:#e6edf2;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0d1419; --panel:#141e25; --fg:#e6edf2; --muted:#93a2ad; --line:#26343e; --chip:#1b2831;
-  --accent:#ff5d6c; --accent-fg:#0d1419; --good:#4fe39a; --bad:#ff6b7a; color-scheme:dark}}
+  --accent:#ff5d6c; --accent-fg:#0d1419; --good:#4fe39a; --bad:#ff6b7a;
+  --skin:#2a2622; --skin-line:#5a4c42; --rib:#4a3f37; --heart:#5a2f35; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d1419; --panel:#141e25; --fg:#e6edf2; --muted:#93a2ad; --line:#26343e; --chip:#1b2831;
-  --accent:#ff5d6c; --accent-fg:#0d1419; --good:#4fe39a; --bad:#ff6b7a; color-scheme:dark}
+  --accent:#ff5d6c; --accent-fg:#0d1419; --good:#4fe39a; --bad:#ff6b7a;
+  --skin:#2a2622; --skin-line:#5a4c42; --rib:#4a3f37; --heart:#5a2f35; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
 .ctl-home{display:block;font:500 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;padding:9px max(16px,env(safe-area-inset-left,0px));background:#14202b;color:#e6edf2;text-decoration:none;letter-spacing:.01em}
 .ctl-home:hover,.ctl-home:focus-visible{background:#22323f;text-decoration:underline}
-.wrap{max-width:1180px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right,0px)) 28px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
+.wrap{max-width:1240px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right,0px)) 28px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 20px}
 header h1{font-family:var(--display);font-weight:600;font-size:clamp(26px,4.4vw,40px);line-height:1.05;margin:0}
 header .sub{color:var(--muted);margin:0;flex:1 1 320px}
 
-/* lesion chooser */
-.lesions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-@media (max-width:640px){.lesions{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.lesion{font:inherit;color:var(--fg);background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer;min-height:56px}
-.lesion b{display:block;font-size:15px;font-weight:600;line-height:1.25}
-.lesion span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:2px}
-.lesion:hover{border-color:var(--accent)}
-.lesion[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
-.lesion[aria-pressed="true"] b{color:var(--accent)}
-.lesion:focus-visible,.seg button:focus-visible,.play:focus-visible,.ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* condition chooser */
+.picker{display:grid;grid-template-columns:repeat(5,auto);gap:10px 18px;align-items:start;justify-content:start}
+@media (max-width:1100px){.picker{grid-template-columns:repeat(3,auto)}}
+@media (max-width:640px){.picker{grid-template-columns:1fr}}
+.grp .gl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.grp .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 14px/1.2 var(--body);color:var(--fg);background:var(--panel);border:1.5px solid var(--line);border-radius:999px;padding:8px 13px;min-height:38px;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.chip:focus-visible,.seg button:focus-visible,.play:focus-visible,.ghost:focus-visible,.spot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* monitor */
 .monitor{position:relative;background:var(--mon-bg);border-radius:8px;overflow:hidden;border:1px solid #000}
-.monitor canvas{display:block;width:100%;height:clamp(250px,40vw,400px)}
+.monitor canvas{display:block;width:100%;height:clamp(250px,36vw,380px)}
 .mon-top{position:absolute;inset:8px 12px auto 12px;display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:12.5px;color:var(--mon-text);pointer-events:none}
 .mon-top .hr{color:var(--ecg);font-size:14px}
 .mon-top .rx b{color:var(--evt);font-weight:500}
 .overlay{position:absolute;left:0;right:0;bottom:34px;display:flex;justify-content:center;pointer-events:none}
 .overlay span{background:rgba(11,18,22,.78);color:#e6edf2;font-family:var(--mono);font-size:13px;padding:6px 12px;border-radius:4px}
 
-/* transport + controls */
-.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+/* transport */
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
 .play{font:600 16px/1 var(--body);background:var(--accent);color:var(--accent-fg);border:0;border-radius:8px;padding:0 22px;height:48px;min-width:132px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px}
 .play svg{width:16px;height:16px;fill:currentColor}
 .ghost{font:500 14px/1 var(--body);background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:0 14px;height:48px;cursor:pointer}
@@ -64,21 +67,46 @@ header .sub{color:var(--muted);margin:0;flex:1 1 320px}
 .vol input{width:120px}
 .hint{color:var(--muted);font-size:13px;margin-left:auto}
 
-.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
-@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr) minmax(0,1.25fr);gap:16px;align-items:start}
+@media (max-width:1080px){.layout{grid-template-columns:300px minmax(0,1fr)} .layout .notes-col{grid-column:1 / -1}}
+@media (max-width:680px){.layout{grid-template-columns:1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
 .panel h2{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
 .ctl{margin:0 0 16px}
 .ctl:last-child{margin-bottom:0}
 .ctl .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;font-size:14px}
-.ctl .top output{font-family:var(--mono);font-size:14px;font-weight:500}
+.ctl .top output{font-family:var(--mono);font-size:13px;font-weight:500;text-align:right}
 .ctl .note{font-size:12.5px;color:var(--muted);margin-top:4px}
+.ctl .note:empty{display:none}
 input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
 .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{flex:1 1 0;font:500 14px/1.2 var(--body);color:var(--fg);background:var(--chip);border:0;border-left:1px solid var(--line);padding:10px 6px;min-height:42px;cursor:pointer}
+.seg button{flex:1 1 0;font:500 14px/1.2 var(--body);color:var(--fg);background:var(--chip);border:0;border-left:1px solid var(--line);padding:9px 6px;min-height:42px;cursor:pointer}
 .seg button:first-child{border-left:0}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 .hidden{display:none !important}
+
+/* chest map */
+.chest svg{display:block;width:100%;max-width:300px;margin:0 auto;height:auto}
+.chest .skin{fill:var(--skin);stroke:var(--skin-line);stroke-width:1.5}
+.chest .rib{fill:none;stroke:var(--rib);stroke-width:5;stroke-linecap:round}
+.chest .bone{fill:var(--rib);stroke:none}
+.chest .heart{fill:var(--heart);opacity:.55}
+.chest .side{font:600 11px var(--mono);fill:var(--muted)}
+.spot{cursor:pointer}
+.spot circle.hit{fill:transparent}
+.spot circle.dot{fill:var(--panel);stroke:var(--fg);stroke-width:2}
+.spot.minor circle.dot{stroke-dasharray:3 2}
+.spot text{font:600 12px var(--mono);fill:var(--fg);pointer-events:none}
+.spot.best circle.dot{stroke:var(--accent);stroke-width:2.5}
+.spot.best text{fill:var(--accent)}
+.spot:hover circle.dot{stroke:var(--accent)}
+#steth{transition:transform .35s cubic-bezier(.3,.7,.2,1);pointer-events:none}
+#steth .ring{fill:rgba(194,39,59,.18);stroke:var(--accent);stroke-width:3}
+#steth .tube{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round}
+.where-now{margin:10px 0 0;font-size:14px}
+.where-now b{display:block;font-size:15px}
+.where-now span{color:var(--muted);font-size:13px}
+.where-now .best-tag{font-family:var(--mono);font-size:11.5px;color:var(--accent)}
 
 /* teaching notes */
 .notes h3{font-family:var(--display);font-weight:600;font-size:22px;margin:0 0 4px}
@@ -91,7 +119,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:28px;margin:0}
 .legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
 
 /* mystery */
-.quiz{border:1.5px dashed var(--accent)}
+.quiz{border:1.5px dashed var(--accent);margin-bottom:16px}
 .quiz .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
 .quiz .opts button{font:500 14px/1.25 var(--body);color:var(--fg);background:var(--chip);border:1px solid var(--line);border-radius:8px;padding:10px;min-height:44px;cursor:pointer;text-align:left}
 .quiz .opts button.right{background:var(--good);color:#fff;border-color:var(--good)}
@@ -107,15 +135,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 <div class="wrap">
   <header>
     <h1>Heart Sounds Simulator</h1>
-    <p class="sub">Listen to synthesised heart sounds and murmurs while a phonocardiogram and ECG show where each sound falls in the cardiac cycle.</p>
+    <p class="sub">Pick a condition, place the stethoscope, and listen while a phonocardiogram and ECG show where each sound falls in the cardiac cycle.</p>
   </header>
 
-  <div class="lesions" role="group" aria-label="Heart sound">
-    <button class="lesion" data-lesion="normal" aria-pressed="true"><b>Normal</b><span>S1 · S2 · split</span></button>
-    <button class="lesion" data-lesion="mr" aria-pressed="false"><b>Mitral regurgitation</b><span>holosystolic</span></button>
-    <button class="lesion" data-lesion="ms" aria-pressed="false"><b>Mitral stenosis</b><span>OS · diastolic rumble</span></button>
-    <button class="lesion" data-lesion="mvp" aria-pressed="false"><b>Mitral valve prolapse</b><span>click · late systolic</span></button>
-  </div>
+  <div class="picker" id="picker" role="group" aria-label="Condition"></div>
 
   <div class="monitor">
     <canvas id="mon" aria-label="Phonocardiogram and ECG"></canvas>
@@ -126,50 +149,63 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   <div class="bar">
     <button class="play" id="play" aria-pressed="false"><svg viewBox="0 0 16 16" id="playIcon"><path d="M3 1.5v13l11-6.5z"/></svg><span id="playLbl">Play</span></button>
     <button class="ghost" id="mysteryBtn">Mystery sound</button>
+    <button class="ghost" id="resetBtn">Reset</button>
     <label class="vol">Volume <input type="range" id="vol" min="0" max="100" value="70" aria-label="Volume"></label>
-    <span class="hint">Headphones help: the rumble of MS is very low-pitched, as it is at the bedside.</span>
+    <span class="hint">Headphones help: many findings are low-pitched, as they are at the bedside.</span>
   </div>
 
   <div class="layout">
+    <div class="panel chest">
+      <h2>Stethoscope position</h2>
+      <svg viewBox="0 0 300 330" id="chestSvg" role="group" aria-label="Chest with auscultation areas">
+        <path class="skin" d="M118 0 L118 38 C 100 52, 60 58, 30 70 C 14 77, 8 92, 10 118 L 22 330 L 278 330 L 290 118 C 292 92, 286 77, 270 70 C 240 58, 200 52, 182 38 L 182 0 Z"/>
+        <g id="ribs"></g>
+        <path class="heart" d="M150 112 C 132 112, 122 128, 126 150 C 130 178, 160 204, 214 214 C 238 200, 244 176, 236 154 C 226 126, 196 112, 176 118 C 168 112, 158 110, 150 112 Z"/>
+        <rect class="bone" x="140" y="66" width="20" height="150" rx="7"/>
+        <path class="rib" d="M146 66 C 120 60, 80 64, 46 74"/>
+        <path class="rib" d="M154 66 C 180 60, 220 64, 254 74"/>
+        <text class="side" x="18" y="320">R</text><text class="side" x="272" y="320">L</text>
+        <g id="spots"></g>
+        <g id="steth"><path class="tube" d="M0 -13 C 0 -40, 30 -40, 34 -64"/><circle class="ring" r="15"/></g>
+      </svg>
+      <p class="where-now" id="whereNow"></p>
+    </div>
+
     <div class="panel">
       <h2>Controls</h2>
+      <div class="ctl" id="ctlSev">
+        <div class="top"><span id="sevTitle">Severity</span><output id="sevOut"></output></div>
+        <div class="seg" data-key="sev"><button data-v="mild">Mild</button><button data-v="moderate">Moderate</button><button data-v="severe">Severe</button></div>
+        <div class="note" id="sevNote"></div>
+      </div>
+      <div class="ctl" id="ctlPos">
+        <div class="top"><span>Manoeuvre</span></div>
+        <div class="seg" data-key="pos"><button data-v="squat">Squatting</button><button data-v="supine">Supine</button><button data-v="stand">Standing</button></div>
+        <div class="note" id="posNote"></div>
+      </div>
       <div class="ctl">
         <div class="top"><label for="hr">Heart rate</label><output id="hrOut">72 bpm</output></div>
         <input type="range" id="hr" min="50" max="110" value="72" step="1">
       </div>
       <div class="ctl">
         <div class="top"><span>Rhythm</span></div>
-        <div class="seg" data-key="rhythm"><button data-v="sinus" aria-pressed="true">Sinus</button><button data-v="af" aria-pressed="false">Atrial fibrillation</button></div>
-      </div>
-      <div class="ctl" id="ctlGrade">
-        <div class="top"><label for="grade">Murmur grade</label><output id="gradeOut">3 / 6</output></div>
-        <input type="range" id="grade" min="1" max="6" value="3" step="1">
-      </div>
-      <div class="ctl" id="ctlSev">
-        <div class="top"><span>Severity</span><output id="sevOut"></output></div>
-        <div class="seg" data-key="sev"><button data-v="mild" aria-pressed="false">Mild</button><button data-v="moderate" aria-pressed="true">Moderate</button><button data-v="severe" aria-pressed="false">Severe</button></div>
-        <div class="note">Shorter A2–opening snap interval and a longer rumble mean higher left atrial pressure.</div>
-      </div>
-      <div class="ctl" id="ctlPos">
-        <div class="top"><span>Manoeuvre</span><output id="posOut"></output></div>
-        <div class="seg" data-key="pos"><button data-v="squat" aria-pressed="false">Squatting</button><button data-v="supine" aria-pressed="true">Supine</button><button data-v="stand" aria-pressed="false">Standing</button></div>
-        <div class="note">Smaller LV volume (standing, Valsalva) moves the click earlier and lengthens the murmur.</div>
+        <div class="seg" data-key="rhythm"><button data-v="sinus">Sinus</button><button data-v="af">Atrial fibrillation</button></div>
       </div>
       <div class="ctl">
         <div class="top"><span>Chest piece</span></div>
-        <div class="seg" data-key="piece"><button data-v="diaphragm" aria-pressed="true">Diaphragm</button><button data-v="bell" aria-pressed="false">Bell</button></div>
-        <div class="note">The diaphragm brings out high-pitched sounds (MR, clicks); the bell, held lightly, brings out low-pitched ones (MS rumble, S3).</div>
+        <div class="seg" data-key="piece"><button data-v="diaphragm">Diaphragm</button><button data-v="bell">Bell</button></div>
+        <div class="note">The diaphragm brings out high-pitched sounds (regurgitant murmurs, clicks); the bell, held lightly, brings out low-pitched ones (rumbles, S3, S4).</div>
       </div>
       <div class="ctl">
         <div class="top"><span>Labels on the trace</span></div>
-        <div class="seg" data-key="labels"><button data-v="on" aria-pressed="true">Show</button><button data-v="off" aria-pressed="false">Hide</button></div>
+        <div class="seg" data-key="labels"><button data-v="on">Show</button><button data-v="off">Hide</button></div>
       </div>
     </div>
 
-    <div>
+    <div class="notes-col">
       <div class="panel quiz hidden" id="quiz">
         <h2>Mystery sound</h2>
-        <p class="fb" id="quizQ">Listen to the timing against the ECG. What is it?</p>
+        <p class="fb" id="quizQ"></p>
         <div class="opts" id="quizOpts"></div>
         <p class="fb" id="quizFb"></p>
         <div class="bar" style="margin-top:10px"><button class="ghost" id="quizNext">Next sound</button><button class="ghost" id="quizEnd">Back to explore</button><span class="score" id="quizScore"></span></div>
@@ -178,88 +214,196 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     </div>
   </div>
 
-  <footer>Sounds are synthesised to reproduce the timing, pitch and shape of each finding; they are not patient recordings. For education only, not for clinical decision-making.</footer>
+  <footer>Sounds are synthesised to reproduce the timing, pitch, shape and location of each finding; they are not patient recordings. For education only, not for clinical decision-making.</footer>
 </div>
 
 <script>
 (() => {
 'use strict';
 
-// ---------------- teaching content ----------------
+// ================= auscultation sites =================
+const SITES = {
+  A:{name:'Aortic area', desc:'Right 2nd intercostal space, sternal edge', x:126, y:100, short:'A'},
+  P:{name:'Pulmonary area', desc:'Left 2nd intercostal space, sternal edge', x:174, y:100, short:'P'},
+  E:{name:"Erb's point", desc:'Left 3rd intercostal space, sternal edge', x:176, y:128, short:'E'},
+  T:{name:'Tricuspid area', desc:'Left 4th–5th intercostal space, lower sternal edge', x:172, y:164, short:'T'},
+  M:{name:'Mitral area (apex)', desc:'Left 5th intercostal space, mid-clavicular line', x:214, y:192, short:'M'},
+  X:{name:'Left axilla', desc:'Anterior axillary line: radiation of mitral regurgitation', x:266, y:186, short:'Ax', minor:true},
+  C:{name:'Right carotid', desc:'Neck: radiation of aortic stenosis', x:130, y:28, short:'Ca', minor:true}
+};
+// How loud each component is at each site (1 = where it is loudest).
+const PROF = {
+  M1:  {A:.4, P:.45,E:.6, T:.8, M:1,  X:.5, C:.2},
+  T1:  {A:.25,P:.35,E:.6, T:1,  M:.5, X:.15,C:.1},
+  A2:  {A:1,  P:.85,E:.8, T:.6, M:.55,X:.35,C:.6},
+  P2:  {A:.22,P:1,  E:.6, T:.3, M:.12,X:.05,C:.1},
+  lv:  {A:.12,P:.15,E:.35,T:.45,M:1,  X:.5, C:.03},   // LV S3/S4, mitral rumbles
+  rv:  {A:.1, P:.3, E:.55,T:1,  M:.35,X:.05,C:.03},   // RV S3/S4, tricuspid rumble
+  mr:  {A:.2, P:.25,E:.4, T:.45,M:1,  X:.85,C:.08},
+  ao:  {A:1,  P:.7, E:.75,T:.5, M:.55,X:.2, C:.9},    // aortic ejection murmurs
+  ar:  {A:.8, P:.6, E:1,  T:.7, M:.45,X:.1, C:.15},
+  tr:  {A:.15,P:.3, E:.6, T:1,  M:.45,X:.05,C:.05},
+  pu:  {A:.5, P:1,  E:.75,T:.45,M:.25,X:.15,C:.3},    // pulmonary murmurs, PDA
+  vsd: {A:.4, P:.5, E:.9, T:1,  M:.55,X:.2, C:.1},
+  hcm: {A:.4, P:.35,E:.85,T:1,  M:.8, X:.25,C:.12},
+  ec:  {A:.9, P:.6, E:.7, T:.6, M:1,  X:.3, C:.3},    // aortic ejection click
+  os:  {A:.35,P:.5, E:.7, T:.85,M:1,  X:.4, C:.1},
+  mech:{A:1,  P:.9, E:.9, T:.8, M:.8, X:.6, C:.7}
+};
+
+// ================= conditions =================
+const DEF_SEV = ['Mild','Moderate','Severe'];
+const COND = {
+  normal:{name:'Normal', full:'Normal heart sounds', grp:'Normal', best:'P', sev:null},
+  as:  {name:'AS', full:'Aortic stenosis', grp:'Left heart valves', best:'A', sev:DEF_SEV},
+  ar:  {name:'AI / AR', full:'Aortic regurgitation', grp:'Left heart valves', best:'E', sev:DEF_SEV},
+  ms:  {name:'MS', full:'Mitral stenosis', grp:'Left heart valves', best:'M', sev:DEF_SEV},
+  mr:  {name:'MR', full:'Mitral regurgitation', grp:'Left heart valves', best:'M', sev:DEF_SEV},
+  mvp: {name:'MVP', full:'Mitral valve prolapse', grp:'Left heart valves', best:'M', sev:DEF_SEV, pos:true},
+  mavr:{name:'Mechanical AVR', full:'Mechanical aortic valve', grp:'Left heart valves', best:'A', sev:['Normal','Obstructed','Paravalvular leak'], sevTitle:'Valve function'},
+  tr:  {name:'TR', full:'Tricuspid regurgitation', grp:'Right heart valves', best:'T', sev:DEF_SEV},
+  ps:  {name:'PS', full:'Pulmonary stenosis', grp:'Right heart valves', best:'P', sev:DEF_SEV},
+  pr:  {name:'PR', full:'Pulmonary regurgitation', grp:'Right heart valves', best:'P', sev:DEF_SEV},
+  asd: {name:'ASD', full:'Atrial septal defect', grp:'Shunts', best:'P', sev:['Small','Moderate','Large'], sevTitle:'Shunt size'},
+  vsd: {name:'VSD', full:'Ventricular septal defect', grp:'Shunts', best:'T', sev:['Small','Moderate','Large + PHT'], sevTitle:'Defect size'},
+  pda: {name:'PDA', full:'Patent ductus arteriosus', grp:'Shunts', best:'P', sev:['Small','Moderate','Large'], sevTitle:'Duct size'},
+  hfref:{name:'HFrEF', full:'Heart failure with reduced EF', grp:'Myocardium', best:'M', sev:DEF_SEV},
+  hcm: {name:'HCM / HOCM', full:'Hypertrophic cardiomyopathy', grp:'Myocardium', best:'T', sev:['No obstruction','Moderate LVOTO','Severe LVOTO'], sevTitle:'Outflow obstruction', pos:true}
+};
+const ORDER = ['normal','as','ar','ms','mr','mvp','mavr','tr','ps','pr','asd','vsd','pda','hfref','hcm'];
+const GROUPS = ['Normal','Left heart valves','Right heart valves','Shunts','Myocardium'];
+
 const INFO = {
-  normal: {
-    name: 'Normal heart sounds',
-    where: 'S1 loudest at the apex · S2 loudest at the base · split heard best at the left 2nd intercostal space',
-    bullets: [
-      '<b>S1</b> is mitral then tricuspid closure at the start of systole, in time with the QRS. It is lower-pitched and longer than S2.',
-      '<b>S2</b> is aortic (A2) then pulmonary (P2) closure at the end of systole, at the end of the T wave.',
-      '<b>Physiological splitting:</b> on inspiration more blood returns to the right heart, P2 is delayed and the split widens. It narrows again on expiration. Watch the breathing indicator.',
-      'Systole (S1 to S2) is shorter than diastole at normal rates. As the rate rises, diastole shortens most.'
-    ],
-    tryit: 'Raise the heart rate to 110 and notice that diastole shortens far more than systole, which makes it harder to tell S1 from S2. Time S1 against the QRS or the carotid pulse.'
-  },
-  mr: {
-    name: 'Mitral regurgitation',
-    where: 'Apex, radiating to the axilla · diaphragm · left lateral position',
-    bullets: [
-      '<b>Holosystolic (pansystolic)</b>, high-pitched, blowing murmur of even intensity that starts with S1 and runs up to and through A2.',
-      '<b>Soft S1</b>, because the leaflets do not close properly; it can be buried in the murmur.',
-      'A2 comes early as the LV empties into the low-pressure atrium, so S2 can be widely split.',
-      '<b>S3</b> in severe MR (grade 4 and above here) from the large volume returning in early diastole. It reflects volume load, not necessarily heart failure.',
-      'Intensity rises with afterload (handgrip) and falls with Valsalva. In chronic MR the loudness tracks severity only loosely.'
-    ],
-    tryit: 'Switch to <b>Atrial fibrillation</b>, which often accompanies chronic MR. Then raise the grade to 4 and switch to the <b>Bell</b> to bring out the S3.'
-  },
-  ms: {
-    name: 'Mitral stenosis',
-    where: 'Apex · bell, held lightly · left lateral position, ideally after brief exercise',
-    bullets: [
-      '<b>Loud S1</b>, while the leaflets are still mobile. It softens once they calcify.',
-      '<b>Opening snap</b>: a sharp, high-pitched sound just after A2 as the stiff leaflets dome open. The <b>shorter the A2–OS interval</b>, the higher the LA pressure and the more severe the stenosis.',
-      '<b>Mid-diastolic rumble</b>: low-pitched, rough, best with the bell. The <b>length</b> of the murmur, not its loudness, tracks severity; in severe MS it lasts through diastole.',
-      '<b>Presystolic accentuation</b> from atrial contraction in sinus rhythm, rising into S1. It is lost in atrial fibrillation.',
-      'A <b>loud P2</b> suggests pulmonary hypertension (shown in severe MS).'
-    ],
-    tryit: 'Compare <b>Mild</b> and <b>Severe</b>: the snap moves closer to S2 and the rumble lengthens. Then switch to <b>Atrial fibrillation</b> and listen for the presystolic accentuation to disappear.'
-  },
-  mvp: {
-    name: 'Mitral valve prolapse',
-    where: 'Apex or left lower sternal edge · diaphragm · examine standing and squatting',
-    bullets: [
-      '<b>Mid-systolic click</b>: a short, high-pitched sound as the prolapsing leaflet and chordae tense suddenly. There can be more than one click.',
-      '<b>Late systolic murmur</b> after the click, rising in intensity up to S2, as the leaflets lose coaptation late in systole.',
-      'Anything that <b>shrinks the LV</b> (standing, Valsalva) makes the valve prolapse sooner, so the <b>click moves earlier</b> and the murmur gets longer.',
-      'Anything that <b>enlarges the LV</b> (squatting, leg raise) delays the prolapse, so the <b>click moves later</b> and the murmur shortens.',
-      'S1 and S2 are normal. As prolapse worsens the murmur can become holosystolic.'
-    ],
-    tryit: 'Move between <b>Squatting</b>, <b>Supine</b> and <b>Standing</b> and watch the click (C) slide along systole. Set the grade to 1 to hear a click with barely any murmur.'
-  }
+  normal:{where:'S1 loudest at the apex · S2 loudest at the base · split heard best in the pulmonary area',
+    bullets:['<b>S1</b> is mitral then tricuspid closure, in time with the QRS. It is loudest at the apex.',
+      '<b>S2</b> is aortic (A2) then pulmonary (P2) closure, at the end of the T wave. It is loudest at the base.',
+      '<b>Physiological splitting:</b> inspiration delays P2 and widens the split; it narrows on expiration. P2 is soft and is only heard in the pulmonary area, so the split disappears elsewhere.',
+      'Systole is shorter than diastole at normal rates; faster rates shorten diastole most.'],
+    tryit:'Move the stethoscope from the <b>pulmonary area</b> to the <b>apex</b>: S1 gets louder, S2 gets softer and the split disappears because P2 cannot be heard there.'},
+  as:{where:'Right 2nd ICS · radiates to both carotids · sitting forward, diaphragm',
+    bullets:['<b>Ejection systolic, crescendo–decrescendo</b>, harsh murmur that starts after S1 and stops before A2.',
+      '<b>Severity is in the shape, not the loudness:</b> as AS worsens the murmur <b>peaks later</b> and lasts longer, and <b>A2 softens</b> until S2 is single or absent.',
+      'Severe AS prolongs ejection, so A2 can fall after P2 (<b>reversed splitting</b>), and a stiff hypertrophied LV gives an <b>S4</b>.',
+      'An <b>ejection click</b> after S1 suggests a mobile (often bicuspid) valve; it disappears as the valve calcifies.',
+      'Radiates to the carotids. At the apex it can sound higher-pitched and musical (Gallavardin phenomenon) and be mistaken for MR.'],
+    tryit:'Step from <b>Mild</b> to <b>Severe</b> and watch the peak slide later and A2 fade. Then listen at the <b>carotid</b> and the <b>apex</b>.'},
+  ar:{where:"Left 3rd ICS (Erb's point) · sitting forward, breath held in expiration · diaphragm",
+    bullets:['<b>Early diastolic, decrescendo</b>, high-pitched, blowing murmur starting straight after A2. Soft and easy to miss.',
+      'Longer murmurs mean more severe chronic AR; in severe AR it lasts through most of diastole.',
+      'Moderate and severe AR add an <b>ejection systolic flow murmur</b> at the base from the large stroke volume, without AS.',
+      'The <b>Austin Flint murmur</b>: a mid-diastolic apical rumble in severe AR, as the regurgitant jet stops the anterior mitral leaflet opening fully. There is no opening snap and S1 is not loud, unlike MS.',
+      'In acute severe AR the murmur is short and soft because LV and aortic diastolic pressures equalise quickly.'],
+    tryit:'Listen at <b>Erb\'s point</b> with the diaphragm, then set <b>Severe</b> and move to the <b>apex</b> with the <b>bell</b> to find the Austin Flint rumble.'},
+  ms:{where:'Apex · bell, held lightly · left lateral position, ideally after brief exercise',
+    bullets:['<b>Loud S1</b> while the leaflets are still mobile; it softens once they calcify.',
+      '<b>Opening snap</b> just after A2. The <b>shorter the A2–OS interval</b>, the higher the LA pressure and the more severe the stenosis.',
+      '<b>Mid-diastolic rumble</b>: low-pitched, best with the bell at the apex. Its <b>length</b>, not its loudness, tracks severity.',
+      '<b>Presystolic accentuation</b> in sinus rhythm, rising into S1. It is lost in AF.',
+      'A <b>loud P2</b> suggests pulmonary hypertension (severe).'],
+    tryit:'Compare <b>Mild</b> and <b>Severe</b>: the snap moves closer to S2 and the rumble lengthens. Then try <b>AF</b>, and move to the base to hear the rumble vanish.'},
+  mr:{where:'Apex · radiates to the left axilla · left lateral position, diaphragm',
+    bullets:['<b>Holosystolic (pansystolic)</b>, high-pitched, blowing murmur from S1 through A2, of even intensity.',
+      '<b>Soft S1</b>, and early A2 so S2 can be widely split.',
+      '<b>S3</b> in severe MR from the large volume returning in early diastole; it reflects volume load, not necessarily failure. A short apical flow rumble can follow it.',
+      'Louder with handgrip (afterload), softer with Valsalva.'],
+    tryit:'Listen at the <b>apex</b>, then move to the <b>axilla</b> to follow the radiation. Set <b>Severe</b> and switch to the <b>bell</b> for the S3.'},
+  mvp:{where:'Apex or lower left sternal edge · diaphragm · examine standing and squatting',
+    bullets:['<b>Mid-systolic click</b> as the prolapsing leaflet and chordae tense suddenly.',
+      '<b>Late systolic murmur</b> after the click, rising up to S2, from late loss of coaptation.',
+      'Smaller LV (<b>standing, Valsalva</b>): prolapse sooner, <b>click earlier</b>, longer murmur.',
+      'Larger LV (<b>squatting</b>, leg raise): prolapse later, <b>click later</b>, shorter murmur.',
+      'More severe prolapse moves the click earlier and the murmur towards holosystolic.'],
+    tryit:'Move between <b>Squatting</b>, <b>Supine</b> and <b>Standing</b> and watch the click (C) slide along systole.'},
+  mavr:{where:'Heard all over the praecordium, often without a stethoscope · diaphragm',
+    bullets:['<b>Crisp metallic closing click</b> (CC) in place of A2: the most prominent sound.',
+      'A softer <b>opening click</b> (OC) at the start of ejection, just after S1.',
+      'A <b>soft ejection systolic flow murmur</b> is normal across any prosthetic aortic valve.',
+      '<b>Obstructed valve</b> (thrombus, pannus): muffled closing click and a louder, longer, later-peaking systolic murmur. Needs urgent echo.',
+      '<b>Any diastolic murmur is abnormal</b>: it suggests a paravalvular leak or valve regurgitation.'],
+    tryit:'Compare <b>Normal</b> with <b>Obstructed</b> and listen for the loss of the crisp closing click. Then try <b>Paravalvular leak</b> and find the new diastolic murmur.'},
+  tr:{where:'Lower left sternal edge · diaphragm · listen through a deep breath',
+    bullets:['<b>Holosystolic</b> murmur at the lower left sternal edge, lower-pitched than MR, not radiating to the axilla.',
+      '<b>Carvallo sign:</b> louder on inspiration, as venous return to the right heart rises. Watch the breathing indicator.',
+      'Severe TR can give a <b>right-sided S3</b>, also louder on inspiration.',
+      'At the bedside look for giant v waves in the JVP and a pulsatile liver.'],
+    tryit:'Keep the stethoscope on the <b>tricuspid area</b> and listen to the murmur swell with each inspiration. Then move to the apex and compare with MR.'},
+  ps:{where:'Left 2nd ICS · may radiate to the left neck and back · diaphragm',
+    bullets:['<b>Ejection systolic, crescendo–decrescendo</b> murmur in the pulmonary area.',
+      'A <b>pulmonary ejection click</b> in mild–moderate valvar PS. It is the only right-sided sound that gets <b>softer on inspiration</b>.',
+      'As PS worsens the murmur <b>peaks later</b>, can run past A2, and <b>P2 becomes later and softer</b>, so S2 splits widely.',
+      'Severe PS can give a right-sided <b>S4</b> and a prominent a wave in the JVP.'],
+    tryit:'Set <b>Mild</b> and watch the ejection click (EC) fade on inspiration. Then set <b>Severe</b> and see the late peak and the widely split, soft P2.'},
+  pr:{where:'Left 2nd–3rd ICS · diaphragm · louder on inspiration',
+    bullets:['<b>Diastolic decrescendo</b> murmur starting at P2 in the pulmonary area.',
+      'With normal pulmonary pressures (for example after tetralogy of Fallot repair) it is <b>low-pitched</b> and starts just after P2.',
+      'With pulmonary hypertension it is <b>high-pitched and blowing</b> (Graham Steell) and follows a loud P2.',
+      'Louder on <b>inspiration</b>, which helps to separate it from AR.',
+      'In <b>severe free PR</b> the murmur is <b>short</b>, because PA and RV diastolic pressures equalise early.'],
+    tryit:'Compare <b>Moderate</b> with <b>Severe</b>: the severe murmur is louder but shorter. Then listen at <b>Erb\'s point</b> and compare with AR.'},
+  asd:{where:'Left 2nd ICS · diaphragm',
+    bullets:['<b>Wide, fixed splitting of S2</b>: the hallmark. The split does not change with breathing.',
+      'The murmur is <b>not from the defect</b> (the low-pressure flow is silent) but a <b>pulmonary ejection flow murmur</b> from the extra right-sided volume.',
+      'With a moderate or large shunt, a <b>mid-diastolic tricuspid flow rumble</b> appears at the lower left sternal edge.',
+      'If pulmonary hypertension develops, P2 gets louder and the flow murmurs fade.'],
+    tryit:'Watch the A2–P2 gap on the trace through several breaths: unlike <b>Normal</b>, it stays the same. Set <b>Large</b> and listen at the <b>tricuspid area</b> with the bell.'},
+  vsd:{where:'Left 3rd–4th ICS, lower left sternal edge · diaphragm',
+    bullets:['<b>Harsh holosystolic</b> murmur at the lower left sternal edge, often with a thrill.',
+      '<b>Small (restrictive) defects are the loudest</b>: a big pressure gradient drives a fast jet (maladie de Roger).',
+      'A moderate shunt adds an <b>apical mid-diastolic flow rumble</b> and an S3 from high flow across the mitral valve.',
+      'A large defect with <b>pulmonary hypertension</b>: the murmur shortens and softens as pressures equalise, and <b>P2 is loud</b>. Eisenmenger physiology is the end stage.'],
+    tryit:'Step from <b>Small</b> to <b>Large + PHT</b>: the murmur gets <b>quieter</b> as the patient gets sicker, and P2 gets louder.'},
+  pda:{where:'Left infraclavicular area (pulmonary area) · diaphragm',
+    bullets:['<b>Continuous "machinery" murmur</b> through systole and diastole, because aortic pressure exceeds pulmonary pressure throughout the cycle.',
+      'It <b>peaks around S2</b> and envelops it, then fades through diastole.',
+      'A larger duct adds an <b>apical mid-diastolic flow rumble</b> and bounding pulses.',
+      'If pulmonary hypertension develops the diastolic part shortens and disappears, leaving a loud P2.'],
+    tryit:'Watch the murmur band run straight through S2. Compare with AS plus AR, where there is a gap at S2.'},
+  hfref:{where:'Apex · bell · left lateral position',
+    bullets:['<b>S3</b> (ventricular gallop) in early diastole, about 120–160 ms after A2, from rapid filling into a dilated LV. Best with the <b>bell</b> at the apex.',
+      'A <b>soft S1</b> from slow LV pressure rise.',
+      'Functional (secondary) <b>MR</b> from annular dilatation in moderate–severe disease.',
+      'A <b>loud P2</b> suggests secondary pulmonary hypertension.',
+      'An S3 over 40 years of age is pathological; in young adults and athletes it can be normal.'],
+    tryit:'Listen at the <b>apex</b> and switch between <b>diaphragm</b> and <b>bell</b>: the S3 almost disappears with the diaphragm.'},
+  hcm:{where:'Lower left sternal edge and apex · diaphragm · examine standing and squatting',
+    bullets:['<b>S4</b> from atrial contraction into a stiff, hypertrophied LV (absent in AF).',
+      'In HOCM, a <b>harsh mid-systolic ejection murmur</b> at the lower left sternal edge from dynamic LVOT obstruction. It does <b>not radiate to the carotids</b>.',
+      '<b>Standing and Valsalva</b> shrink the LV, increase the obstruction and make the murmur <b>louder</b>; <b>squatting</b> makes it <b>softer</b>. This is the opposite of AS.',
+      'Severe obstruction adds late MR from systolic anterior motion (SAM) and can reverse S2 splitting.',
+      'Non-obstructive HCM may have only an S4.'],
+    tryit:'With <b>Severe LVOTO</b>, go from <b>Squatting</b> to <b>Standing</b> and hear the murmur grow. Then try the <b>carotid</b>: unlike AS, it is quiet there.'}
 };
 const SEV_A2OS = {mild:0.11, moderate:0.085, severe:0.06};
 const POS_FRAC = {squat:0.74, supine:0.56, stand:0.33};
 const POS_GAIN = {squat:0.8, supine:1, stand:1.15};
-const POS_LBL = {squat:'click late', supine:'mid-systolic click', stand:'click early'};
+const HCM_POS = {squat:0.45, supine:1, stand:1.7};
+const POS_NOTE = {
+  mvp:'Smaller LV volume (standing, Valsalva) moves the click earlier and lengthens the murmur.',
+  hcm:'Standing and Valsalva increase LVOT obstruction and the murmur; squatting reduces both.'
+};
 
-// ---------------- state ----------------
-const S = {lesion:'normal', hr:72, rhythm:'sinus', grade:3, sev:'moderate', pos:'supine', piece:'diaphragm', labels:'on', vol:0.7};
+// ================= state =================
+const DEFAULTS = {lesion:'normal', hr:72, rhythm:'sinus', sev:'moderate', pos:'supine', piece:'diaphragm', labels:'on', loc:'P'};
+const S = {...DEFAULTS, vol:0.7};
 let quiz = null; // {answer, done}
 let score = {right:0, total:0};
 
-// ---------------- DSP helpers ----------------
+// ================= DSP helpers =================
 const DR = 4000;            // display sample rate (Hz)
 const PRE = 0.06;           // each beat buffer starts this long before the R wave
 const TAIL = 0.12;          // and runs this long past the next R wave
 
-function bpCoef(f, Q, sr){const w=2*Math.PI*f/sr,a=Math.sin(w)/(2*Q),c=Math.cos(w),a0=1+a;return [a/a0,0,-a/a0,-2*c/a0,(1-a)/a0]}
+function bpCoef(f, Q, sr){const w=2*Math.PI*Math.min(f,sr*0.45)/sr,a=Math.sin(w)/(2*Q),c=Math.cos(w),a0=1+a;return [a/a0,0,-a/a0,-2*c/a0,(1-a)/a0]}
 function lpCoef(f, Q, sr){const w=2*Math.PI*f/sr,a=Math.sin(w)/(2*Q),c=Math.cos(w),a0=1+a;return [(1-c)/2/a0,(1-c)/a0,(1-c)/2/a0,-2*c/a0,(1-a)/a0]}
 function filt(x, k){let x1=0,x2=0,y1=0,y2=0;for(let i=0;i<x.length;i++){const x0=x[i];const y=k[0]*x0+k[1]*x1+k[2]*x2-k[3]*y1-k[4]*y2;x2=x1;x1=x0;y2=y1;y1=y;x[i]=y}return x}
 function noise(n){const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=Math.random()*2-1;return a}
 function unitRMS(x){let s=0;for(let i=0;i<x.length;i++)s+=x[i]*x[i];const r=Math.sqrt(s/x.length)||1;for(let i=0;i<x.length;i++)x[i]/=r;return x}
-// smooth random modulation (0..1), for the rough texture of a rumble
+// smooth random modulation (0..1): rough texture for rumbles and harsh murmurs
 function wobble(n, sr, f){const x=noise(n);filt(x,lpCoef(f,0.7,sr));filt(x,lpCoef(f,0.7,sr));unitRMS(x);for(let i=0;i<n;i++)x[i]=Math.max(0,Math.min(1,0.6+0.3*x[i]));return x}
 
-// a damped, downward-gliding sinusoid: the building block of valve closure sounds
+// damped, downward-gliding sinusoid: the building block of valve closure sounds
 function tone(out, sr, t, amp, f0, f1, tau, att){
+  if(amp<=0.002 || f0 >= sr*0.48) return;
   att = att || 0.0025;
   const i0 = Math.round(t*sr), n = Math.ceil(tau*7*sr);
   let ph = 0;
@@ -270,7 +414,6 @@ function tone(out, sr, t, amp, f0, f1, tau, att){
     out[i] += amp*(1-Math.exp(-tt/att))*Math.exp(-tt/tau)*Math.sin(ph);
   }
 }
-// valve closure: fundamental plus a few harmonics; "sharp" raises the higher partials
 function valve(out, sr, t, amp, base, tau, sharp){
   sharp = sharp==null ? 1 : sharp;
   tone(out,sr,t,amp,base*1.15,base,tau);
@@ -282,8 +425,15 @@ function click(out, sr, t, amp){
   tone(out,sr,t,amp*0.6,520,430,0.003,0.0005);
   tone(out,sr,t+0.001,amp*0.5,130,110,0.01,0.001);
 }
-// shaped, band-limited noise: murmurs
+function lowThud(out, sr, t, amp){ // S3 / S4
+  tone(out,sr,t,amp,44,34,0.035,0.006); tone(out,sr,t,amp*0.4,92,78,0.02,0.004);
+}
+function metal(out, sr, t, amp){ // mechanical valve: crisp, inharmonic, ringing
+  tone(out,sr,t,amp*0.5,95,80,0.012,0.001);
+  [[1180,0.9,0.014],[1930,0.7,0.010],[2870,0.5,0.007],[3900,0.3,0.005],[640,0.6,0.012]].forEach(([f,a,tau])=>tone(out,sr,t,amp*a,f,f*0.995,tau,0.0003));
+}
 function murmur(out, sr, t0, t1, amp, bands, envFn, tex){
+  if(amp<=0.003) return;
   const i0=Math.max(0,Math.round(t0*sr)), i1=Math.min(out.length,Math.round(t1*sr)), n=i1-i0;
   if(n<=8) return;
   const mix=new Float32Array(n);
@@ -297,96 +447,208 @@ function murmur(out, sr, t0, t1, amp, bands, envFn, tex){
     out[i0+i]+=amp*e*mix[i];
   }
 }
+const diamond = (pk, fl) => u => { fl=fl||0; const e = u<pk ? Math.pow(u/pk,1.1) : Math.pow((1-u)/(1-pk),0.9); return fl+(1-fl)*e; };
+const decres = (p) => u => Math.pow(1-u, p||1.2);
+const plateau = u => 0.85+0.15*Math.sin(Math.PI*Math.min(1,u*1.4));
 const gauss=(t,m,s,a)=>a*Math.exp(-((t-m)*(t-m))/(2*s*s));
 
-// ---------------- beat synthesis ----------------
-// Returns audio (at sr) and display samples for one beat, timed relative to its R wave (t=0 at index PRE).
+// timbres: [centre Hz, Q, weight]
+const B = {
+  blow:[[330,0.9,1],[190,1,0.55],[620,1.2,0.3]],     // MR
+  blowHi:[[480,0.8,1],[780,1,0.5],[300,1,0.35]],     // AR, leaks
+  harsh:[[170,0.8,1],[320,0.9,0.85],[560,1,0.4]],    // AS, PS, VSD, HOCM
+  tr:[[240,0.9,1],[150,1,0.55],[420,1.2,0.25]],
+  rumble:[[62,0.9,1],[95,1,0.7],[150,1.2,0.25]],
+  prLow:[[140,0.9,1],[230,1,0.6],[90,1,0.4]],
+  mach:[[200,0.8,1],[380,0.9,0.7],[120,1,0.45]],
+  flow:[[190,0.9,1],[330,1,0.6]]
+};
+
+// ================= beat synthesis =================
+// Returns audio (at sr) and display samples for one beat, timed relative to its R wave.
 function synthBeat(p, RR, tAbs, sr){
-  const meanHR = p.hr;
   const L = PRE + RR + TAIL;
   const n = Math.ceil(L*sr);
   const out = new Float32Array(n);
   const ev = [], seg = [];
-  const T = t => t + PRE; // beat time -> buffer time
+  const T = t => t + PRE;
+  const loc = p.loc, G = k => PROF[k][loc];
   const resp = Math.sin(2*Math.PI*tAbs/5);       // 12 breaths/min, >0 = inspiration
   const insp = Math.max(0, resp);
-  const af = p.rhythm === 'af';
+  const RI = 1 + 0.45*insp;                      // right-sided augmentation (Carvallo)
+  const af = p.rhythm === 'af', sinus = !af;
+  const les = p.lesion, sev = p.sev, sv = {mild:0, moderate:1, severe:2}[sev];
   const varS1 = af ? 0.75 + 0.5*Math.min(1, 0.6/RR)*Math.random() : 1;
+  const addEv = (t,l,g) => ev.push({t,l,g});
+  const addSeg = (a,b,l,s,g) => seg.push({a,b,l,s,g});
+  const M = (k, t0, t1, amp, bands, env, tex) => { murmur(out,sr,T(t0),T(t1),amp*G(k),bands,env,tex); };
 
   const s1 = 0.045;
-  const lvet = 0.413 - 0.0017*meanHR + (af ? (RR - 60/meanHR)*0.08 : 0);
+  const nextS1 = RR + s1;
+  const lvet = 0.413 - 0.0017*p.hr + (af ? (RR - 60/p.hr)*0.08 : 0);
   let s2 = s1 + 0.04 + lvet;
-  let split = 0.012 + 0.032*insp;   // A2 -> P2
-  let p2amp = 0.5;
+
+  // ---- S2 components: timing and loudness
+  let a2 = s2, a2amp = 0.85, p2amp = 0.5;
+  const splitN = 0.012 + 0.032*insp;
+  let p2 = s2 + splitN;
+  let mechClose = false;
+  if(les==='mr'){ a2 -= 0.012 + 0.006*sv; p2 = s2 + splitN + 0.01; }
+  if(les==='ms' && sev==='severe'){ p2amp = 1.05; p2 = a2 + 0.016 + 0.012*insp; }
+  if(les==='as'){
+    a2amp = [0.7,0.45,0.18][sv];
+    if(sev==='severe'){ a2 = s2 + 0.045; }            // prolonged ejection: reversed split
+    else if(sev==='moderate'){ a2 = s2 + 0.015; }
+  }
+  if(les==='hcm' && sev==='severe'){ a2 = s2 + 0.04; }
+  if(les==='mavr'){ mechClose = true; if(sev==='moderate') a2 = s2 + 0.025; }
+  if(les==='ps'){ p2 = a2 + [0.035,0.055,0.08][sv] + 0.02*insp; p2amp = [0.45,0.32,0.18][sv]; }
+  if(les==='pr'){ p2amp = sev==='severe' ? 0.6 : 0.5; }
+  if(les==='asd'){ p2 = a2 + [0.045,0.055,0.065][sv]; p2amp = 0.6; }
+  if(les==='vsd' && sev==='severe'){ p2amp = 1.15; p2 = a2 + 0.012 + 0.012*insp; }
+  if(les==='pda' && sev==='severe'){ p2amp = 0.9; }
+  if(les==='hfref' && sev==='severe'){ p2amp = 0.95; }
 
   // ---- S1
-  let s1amp = 1, s1base = 52, s1tau = 0.022, s1sharp = 1;
-  if(p.lesion==='mr'){ s1amp = p.grade>=4 ? 0.5 : 0.65; }
-  if(p.lesion==='ms'){ s1amp = 1.55; s1base = 68; s1tau = 0.016; s1sharp = 1.6; }
-  s1amp *= varS1;
-
-  if(p.lesion==='mr'){ s2 -= 0.012 + 0.004*p.grade; split += 0.02; }
-  if(p.lesion==='ms' && p.sev==='severe'){ p2amp = 1.05; split = 0.016 + 0.012*insp; }
-
-  valve(out,sr,T(s1),s1amp,s1base,s1tau,s1sharp);                 // M1
-  valve(out,sr,T(s1+0.022),s1amp*0.55,s1base*1.1,s1tau*0.8,s1sharp); // T1
-  ev.push({t:s1,l:'S1'});
+  let m1amp = 1, s1base = 52, s1tau = 0.022, s1sharp = 1;
+  if(les==='mr'){ m1amp = [0.8,0.65,0.5][sv]; }
+  if(les==='ms'){ m1amp = 1.55; s1base = 68; s1tau = 0.016; s1sharp = 1.6; }
+  if(les==='hfref'){ m1amp = [0.8,0.65,0.5][sv]; }
+  m1amp *= varS1;
+  valve(out,sr,T(s1),m1amp*G('M1'),s1base,s1tau,s1sharp);
+  valve(out,sr,T(s1+0.022),m1amp*0.55*G('T1'),s1base*1.1,s1tau*0.8,s1sharp);
+  addEv(s1,'S1',Math.max(G('M1'),G('T1')));
 
   // ---- S2
-  valve(out,sr,T(s2),0.85,72,0.014,1.15);              // A2
-  valve(out,sr,T(s2+split),p2amp,78,0.012,1.15);       // P2
-  ev.push({t:s2, l: split>0.03 ? 'A2' : 'S2'});
-  if(split>0.03) ev.push({t:s2+split,l:'P2'});
+  if(mechClose){
+    if(sev==='moderate') valve(out,sr,T(a2),0.5*G('mech'),70,0.012,0.6); else metal(out,sr,T(a2),1.15*G('mech'));
+    addEv(a2,'CC',G('mech'));
+  } else valve(out,sr,T(a2),a2amp*G('A2'),72,0.014,1.15);
+  valve(out,sr,T(p2),p2amp*G('P2'),78,0.012,1.15);
+  const sep = Math.abs(p2-a2);
+  const showSplit = sep>0.028 && p2amp*G('P2')>0.15;
+  if(!mechClose){
+    if(showSplit){ addEv(a2,'A2',a2amp*G('A2')>0.12?1:0); addEv(p2,'P2',1); }
+    else addEv(Math.min(a2,p2),'S2',1);
+  } else if(showSplit) addEv(p2,'P2',1);
 
-  // ---- lesion-specific
-  if(p.lesion==='mr'){
-    const amp = 0.036*Math.pow(p.grade,1.35);
-    const a=s1-0.006, b=s2+0.03;
-    murmur(out,sr,T(a),T(b),amp,[[330,0.9,1],[190,1,0.55],[620,1.2,0.3]],u=>0.85+0.15*Math.sin(Math.PI*Math.min(1,u*1.4)));
-    seg.push({a,b,l:'Holosystolic murmur',s:'HSM'});
-    if(p.grade>=4){
-      const s3=s2+0.135;
-      tone(out,sr,T(s3),0.55,44,34,0.035,0.006); tone(out,sr,T(s3),0.22,92,78,0.02,0.004);
-      ev.push({t:s3,l:'S3'});
-      // short mid-diastolic flow rumble from the large volume crossing the valve
-      murmur(out,sr,T(s3+0.01),T(s3+0.09),amp*0.5,[[70,1,1],[120,1,0.5]],u=>1-u,22);
+  const lastS2 = Math.max(a2,p2);
+  const diaDur = nextS1 - lastS2;
+
+  // ---- lesion-specific sounds
+  switch(les){
+  case 'mr': {
+    const amp = [0.1,0.16,0.22][sv];
+    const a=s1-0.006, b=a2+0.03;
+    M('mr',a,b,amp,B.blow,plateau);
+    addSeg(a,b,'Holosystolic murmur','HSM',G('mr'));
+    if(sev==='severe'){
+      const s3=a2+0.135; lowThud(out,sr,T(s3),0.55*G('lv')); addEv(s3,'S3',G('lv'));
+      M('lv',s3+0.01,s3+0.09,0.1,B.rumble,decres(1),22);
     }
-  }
-  if(p.lesion==='ms'){
-    let a2os = SEV_A2OS[p.sev] * (meanHR>90 ? 0.9 : 1);
-    const os = s2 + a2os;
-    click(out,sr,T(os),0.75); tone(out,sr,T(os),0.35,150,120,0.008,0.001);
-    ev.push({t:os,l:'OS'});
-    const ra = os + 0.02, rb = RR + s1 - 0.004;
-    const dur = rb - ra;
-    const tau = {mild:0.07, moderate:0.15, severe:0.45}[p.sev];
-    const floor = {mild:0, moderate:0.12, severe:0.5}[p.sev];
-    const sinus = !af;
-    const amp = {mild:0.32, moderate:0.42, severe:0.48}[p.sev];
-    const pre = 0.15;
-    murmur(out,sr,T(ra),T(rb),amp,[[62,0.9,1],[95,1,0.7],[150,1.2,0.25]],u=>{
-      const t=u*dur;
-      let e = floor + (1-floor)*Math.exp(-t/tau);
-      e *= Math.min(1,t/0.03);
+    break; }
+  case 'ms': {
+    const a2os = SEV_A2OS[sev] * (p.hr>90 ? 0.9 : 1);
+    const os = a2 + a2os;
+    click(out,sr,T(os),0.75*G('os')); tone(out,sr,T(os),0.35*G('os'),150,120,0.008,0.001);
+    addEv(os,'OS',G('os'));
+    const ra = os + 0.02, rb = nextS1 - 0.004, dur = rb - ra;
+    const tau = [0.07,0.15,0.45][sv], floor = [0,0.12,0.5][sv], pre = 0.15;
+    M('lv',ra,rb,[0.32,0.42,0.48][sv],B.rumble,u=>{
+      const t=u*dur; let e = floor + (1-floor)*Math.exp(-t/tau); e *= Math.min(1,t/0.03);
       if(sinus){ const x=(t-(dur-pre))/pre; if(x>0) e = Math.max(e, 0.25 + 1.0*Math.pow(x,1.4)); }
-      return e;
-    },24);
-    const mdEnd = p.sev==='severe' ? rb : ra + Math.min(dur, tau*3 + 0.04);
-    seg.push({a:ra,b: sinus && p.sev!=='severe' ? Math.min(mdEnd, rb-pre-0.02) : rb,l:'Mid-diastolic rumble',s:'MDM'});
-    if(sinus && p.sev!=='severe') seg.push({a:rb-pre,b:rb,l:'Presystolic',s:'PSA'});
-    if(sinus && p.sev==='severe') ev.push({t:rb-pre*0.55,l:'↑ presystolic'});
-  }
-  if(p.lesion==='mvp'){
-    const frac = POS_FRAC[p.pos];
+      return e; },24);
+    const mdEnd = sev==='severe' ? rb : ra + Math.min(dur, tau*3 + 0.04);
+    addSeg(ra, sinus && sev!=='severe' ? Math.min(mdEnd, rb-pre-0.02) : rb, 'Mid-diastolic rumble','MDM',G('lv'));
+    if(sinus && sev!=='severe') addSeg(rb-pre,rb,'Presystolic','PSA',G('lv'));
+    break; }
+  case 'mvp': {
+    const frac = POS_FRAC[p.pos] * [1,0.85,0.6][sv];
     const c = s1 + 0.03 + frac*(s2 - s1 - 0.03);
-    click(out,sr,T(c),1.0);
-    ev.push({t:c,l:'C'});
-    const amp = 0.05*Math.pow(p.grade,1.3)*POS_GAIN[p.pos];
-    const a=c+0.018, b=s2+0.012;
-    if(b-a>0.02){
-      murmur(out,sr,T(a),T(b),amp,[[380,0.9,1],[230,1,0.5],[700,1.2,0.3]],u=>0.3+0.7*Math.pow(u,0.8));
-      seg.push({a,b,l:'Late systolic murmur',s:'LSM'});
+    click(out,sr,T(c),1.0*G('mr')); addEv(c,'C',G('mr'));
+    const amp = [0.07,0.12,0.17][sv]*POS_GAIN[p.pos];
+    const a=c+0.018, b=a2+0.012;
+    if(b-a>0.02){ M('mr',a,b,amp,B.blow,u=>0.3+0.7*Math.pow(u,0.8)); addSeg(a,b,'Late systolic murmur','LSM',G('mr')); }
+    break; }
+  case 'as': {
+    if(sev!=='severe'){ const ec=s1+0.055; click(out,sr,T(ec),[0.6,0.4][sv]*G('ec')); addEv(ec,'EC',G('ec')); }
+    const a=s1+0.06, b=a2-0.008, pk=[0.3,0.45,0.62][sv];
+    M('ao',a,b,[0.17,0.24,0.28][sv],B.harsh,diamond(pk),48);
+    addSeg(a,b,'Ejection systolic murmur','ESM',G('ao'));
+    if(sev==='severe' && sinus){ const s4=RR-0.035; lowThud(out,sr,T(s4),0.5*G('lv')); addEv(s4,'S4',G('lv')); }
+    break; }
+  case 'ar': {
+    const a=a2+0.004, len=[0.3,0.55,0.95][sv], b=a+len*(nextS1-0.02-a);
+    M('ar',a,b,[0.11,0.15,0.19][sv],B.blowHi,decres(1.1));
+    addSeg(a,b,'Early diastolic murmur','EDM',G('ar'));
+    if(sev!=='mild'){ const fa=s1+0.06, fb=a2-0.02; M('ao',fa,fb,[0,0.07,0.12][sv],B.flow,diamond(0.35)); addSeg(fa,fb,'Systolic flow murmur','Flow',G('ao')); }
+    if(sev==='severe'){
+      const ra=a2+0.16, rb=nextS1-0.01;
+      M('lv',ra,rb,0.2,B.rumble,u=>{ const x=sinus?Math.max(0,(u-0.7)/0.3):0; return 0.5*Math.exp(-u*2)+0.2+0.8*x*x; },24);
+      addSeg(ra,rb,'Austin Flint rumble','AFM',G('lv'));
     }
+    break; }
+  case 'mavr': {
+    const oc=s1+0.065; metal(out,sr,T(oc),(sev==='moderate'?0.25:0.55)*G('mech')); addEv(oc,'OC',G('mech'));
+    const a=oc+0.012, b=a2-0.012;
+    const ob = sev==='moderate';
+    M('ao',a,b,ob?0.22:0.08,ob?B.harsh:B.flow,diamond(ob?0.6:0.35),ob?48:0);
+    addSeg(a,b,ob?'Long ejection murmur':'Flow murmur',ob?'ESM':'Flow',G('ao'));
+    if(sev==='severe'){ const da=a2+0.012, db=da+0.5*(nextS1-da); M('ar',da,db,0.14,B.blowHi,decres(1.1)); addSeg(da,db,'Diastolic murmur (leak)','EDM',G('ar')); }
+    break; }
+  case 'tr': {
+    const a=s1-0.004, b=p2+0.02;
+    M('tr',a,b,[0.1,0.15,0.21][sv]*RI,B.tr,plateau);
+    addSeg(a,b,'Holosystolic murmur','HSM',G('tr'));
+    if(sev==='severe'){ const s3=p2+0.12; lowThud(out,sr,T(s3),0.45*RI*G('rv')); addEv(s3,'S3',G('rv')); }
+    break; }
+  case 'ps': {
+    if(sev!=='severe'){ const ec=s1+0.05-0.012*sv, ga=(1-0.75*insp); click(out,sr,T(ec),[0.75,0.55][sv]*ga*G('pu')); addEv(ec,'EC',G('pu')*ga); }
+    const a=s1+0.055, pk=[0.35,0.5,0.66][sv], b=(sev==='severe' ? a2+0.03 : a2-0.008);
+    M('pu',a,b,[0.16,0.23,0.28][sv],B.harsh,diamond(pk),48);
+    addSeg(a,b,'Ejection systolic murmur','ESM',G('pu'));
+    if(sev==='severe' && sinus){ const s4=RR-0.035; lowThud(out,sr,T(s4),0.45*RI*G('rv')); addEv(s4,'S4',G('rv')); }
+    break; }
+  case 'pr': {
+    const a=p2+0.03, len=[0.45,0.6,0.32][sv], b=a+len*(nextS1-a);
+    M('pu',a,b,[0.1,0.14,0.2][sv]*RI,B.prLow,u=>Math.min(1,u*8)*Math.pow(1-u,0.9));
+    addSeg(a,b,'Diastolic murmur','DM',G('pu'));
+    break; }
+  case 'asd': {
+    const a=s1+0.06, b=a2-0.02;
+    M('pu',a,b,[0.08,0.12,0.15][sv],B.flow,diamond(0.35));
+    addSeg(a,b,'Pulmonary flow murmur','Flow',G('pu'));
+    if(sev!=='mild'){ const ra=p2+0.09, rb=Math.min(nextS1-0.05, ra+0.2); M('rv',ra,rb,[0,0.12,0.2][sv]*RI,B.rumble,decres(0.8),22); addSeg(ra,rb,'Tricuspid flow rumble','MDM',G('rv')); }
+    break; }
+  case 'vsd': {
+    if(sev==='severe'){
+      const a=s1-0.004, b=s1+0.55*(a2-s1); M('vsd',a,b,0.09,B.harsh,decres(0.6),40);
+      addSeg(a,b,'Short systolic murmur','SM',G('vsd'));
+    } else {
+      const a=s1-0.006, b=a2+0.01; M('vsd',a,b,[0.3,0.24][sv],B.harsh,plateau,46);
+      addSeg(a,b,'Harsh holosystolic murmur','HSM',G('vsd'));
+      if(sev==='moderate'){ const s3=a2+0.135; lowThud(out,sr,T(s3),0.35*G('lv')); addEv(s3,'S3',G('lv')); M('lv',s3+0.01,s3+0.12,0.13,B.rumble,decres(0.9),22); addSeg(s3+0.01,s3+0.12,'Apical flow rumble','MDM',G('lv')); }
+    }
+    break; }
+  case 'pda': {
+    const a=s1+0.05, b=nextS1-0.025, tau=[0.5,0.4,0.12][sv]*diaDur;
+    M('pu',a,b,[0.15,0.2,0.17][sv],B.mach,u=>{ const t=a+u*(b-a); return t<a2 ? 0.15+0.85*Math.pow((t-a)/(a2-a),1.3) : Math.exp(-(t-a2)/tau); },18);
+    addSeg(a,b,'Continuous murmur','Cont.',G('pu'));
+    if(sev!=='mild'){ const ra=a2+0.15, rb=Math.min(nextS1-0.05,ra+0.16); M('lv',ra,rb,0.12,B.rumble,decres(0.9),22); }
+    break; }
+  case 'hfref': {
+    const s3=a2+0.14-0.01*sv; lowThud(out,sr,T(s3),[0.4,0.65,0.85][sv]*G('lv')); addEv(s3,'S3',G('lv'));
+    if(sev!=='mild'){ const a=s1-0.004, b=a2+0.015; M('mr',a,b,[0,0.07,0.11][sv],B.blow,plateau); addSeg(a,b,'Functional MR','HSM',G('mr')); }
+    break; }
+  case 'hcm': {
+    if(sinus){ const s4=RR-0.035; lowThud(out,sr,T(s4),0.6*G('lv')); addEv(s4,'S4',G('lv')); }
+    const gain = HCM_POS[p.pos];
+    const amp = [0.035,0.16,0.24][sv]*gain;
+    const a=s1+0.075, b=a2-0.015;
+    M('hcm',a,b,Math.min(0.42,amp),B.harsh,diamond(0.55),46);
+    if(amp>0.05) addSeg(a,b,'Ejection systolic murmur','ESM',G('hcm'));
+    if(sev==='severe'){ const ma=s1+0.45*(a2-s1), mb=a2+0.02; M('mr',ma,mb,0.07*gain,B.blow,u=>0.4+0.6*u); }
+    break; }
   }
 
   // ---- ECG for the display (includes the P wave of the next beat)
@@ -396,46 +658,40 @@ function synthBeat(p, RR, tAbs, sr){
   for(let i=0;i<nd;i++){
     const t=i/DR - PRE;
     let v = gauss(t,-0.022,0.007,-0.1)+gauss(t,0,0.0095,1)+gauss(t,0.024,0.008,-0.24)+gauss(t,tEnd-0.07,0.042,0.3);
-    if(!af) v += gauss(t,RR-0.16,0.022,0.12);
+    if(sinus) v += gauss(t,RR-0.16,0.022,0.12);
     else if(t>0.0 && t<RR) v += 0.045*Math.sin(2*Math.PI*6.3*(tAbs+t)+1.3*Math.sin(2*Math.PI*0.9*(tAbs+t))) + 0.02*Math.sin(2*Math.PI*8.7*(tAbs+t));
     ecg[i]=v;
   }
-  // display copy of the audio
   const stride = sr/DR;
   const pcg = new Float32Array(nd);
   for(let i=0;i<nd;i++){ const j=Math.floor(i*stride); pcg[i] = j<n ? out[j] : 0; }
-
-  return {out, ecg, pcg, ev, seg, resp, s2, split};
+  return {out, ecg, pcg, ev, seg, resp};
 }
 
-// ---------------- display track (ring buffer in absolute time) ----------------
-function Track(){
-  const N = DR*24;
-  return {N, pcg:new Float32Array(N), ecg:new Float32Array(N), clearedTo:0, start:null, ev:[], seg:[], resp:[]};
-}
-function trackAdd(tr, beat, t0){ // t0 = absolute time of buffer index 0
+// ================= display track =================
+function Track(){ const N = DR*24; return {N, pcg:new Float32Array(N), ecg:new Float32Array(N), clearedTo:0, start:null, ev:[], seg:[], resp:[]}; }
+function trackAdd(tr, beat, t0){
   const i0 = Math.round(t0*DR), n = beat.pcg.length, i1 = i0+n;
   if(tr.start===null){ tr.start = t0; tr.clearedTo = i0; }
   for(let i=Math.max(tr.clearedTo,i0-1); i<i1; i++){ const k=((i%tr.N)+tr.N)%tr.N; tr.pcg[k]=0; tr.ecg[k]=0; }
   tr.clearedTo = Math.max(tr.clearedTo, i1);
   for(let i=0;i<n;i++){ const k=(((i0+i)%tr.N)+tr.N)%tr.N; tr.pcg[k]+=beat.pcg[i]; tr.ecg[k]+=beat.ecg[i]; }
   const R = t0 + PRE;
-  for(const e of beat.ev) tr.ev.push({t:R+e.t,l:e.l});
-  for(const s of beat.seg) tr.seg.push({a:R+s.a,b:R+s.b,l:s.l,s:s.s});
+  for(const e of beat.ev) tr.ev.push({t:R+e.t,l:e.l,g:e.g});
+  for(const s of beat.seg) tr.seg.push({a:R+s.a,b:R+s.b,l:s.l,s:s.s,g:s.g});
   tr.resp.push({t:R, v:beat.resp});
   const cut = R - 20;
   tr.ev = tr.ev.filter(e=>e.t>cut); tr.seg = tr.seg.filter(s=>s.b>cut); tr.resp = tr.resp.filter(r=>r.t>cut);
 }
 
-// ---------------- audio engine ----------------
+// ================= audio engine =================
 let ctx=null, master=null, pieceLo=null, pieceHi=null;
-let playing=false, nextR=0, timer=null, live=null, frozenNow=null, lastBeat=null;
+let playing=false, nextR=0, timer=null, live=null, frozenNow=null;
 
 function nextRR(){
   const m = 60/S.hr;
   if(S.rhythm!=='af') return m;
-  const lvet = 0.413 - 0.0017*S.hr;
-  const min = 0.045 + 0.04 + lvet + 0.17;
+  const min = 0.045 + 0.04 + (0.413 - 0.0017*S.hr) + 0.2;
   return Math.max(min, m*(0.62 + 0.76*Math.random()));
 }
 function ensureAudio(){
@@ -446,7 +702,7 @@ function ensureAudio(){
   pieceLo = ctx.createBiquadFilter(); pieceLo.type='lowshelf';
   pieceHi = ctx.createBiquadFilter(); pieceHi.type='highshelf';
   const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=18;
-  const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800;
+  const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=5500;
   const comp = ctx.createDynamicsCompressor(); comp.threshold.value=-10; comp.ratio.value=4; comp.attack.value=0.002; comp.release.value=0.15;
   master = ctx.createGain();
   hp.connect(pieceLo); pieceLo.connect(pieceHi); pieceHi.connect(lp); lp.connect(comp); comp.connect(master); master.connect(ctx.destination);
@@ -459,7 +715,7 @@ function applyPiece(){
   if(S.piece==='bell'){ pieceLo.frequency.setTargetAtTime(160,t,0.02); pieceLo.gain.setTargetAtTime(5,t,0.03); pieceHi.frequency.setTargetAtTime(260,t,0.02); pieceHi.gain.setTargetAtTime(-14,t,0.03); }
   else { pieceLo.frequency.setTargetAtTime(140,t,0.02); pieceLo.gain.setTargetAtTime(-10,t,0.03); pieceHi.frequency.setTargetAtTime(300,t,0.02); pieceHi.gain.setTargetAtTime(3,t,0.03); }
 }
-function applyVol(){ if(master) master.gain.setTargetAtTime(0.55*S.vol*S.vol*1.4,ctx.currentTime,0.03); }
+function applyVol(){ if(master) master.gain.setTargetAtTime(0.77*S.vol*S.vol,ctx.currentTime,0.03); }
 
 function schedule(){
   if(!playing) return;
@@ -473,7 +729,6 @@ function schedule(){
     const t0 = nextR - PRE;
     src.start(Math.max(ctx.currentTime, t0), Math.max(0, ctx.currentTime - t0));
     trackAdd(live, beat, t0);
-    lastBeat = beat;
     nextR += RR;
   }
 }
@@ -491,32 +746,31 @@ function stop(){
   if(!playing) return;
   playing=false; clearInterval(timer);
   frozenNow = displayNow();
-  // fade out what is already queued
   const t=ctx.currentTime; master.gain.cancelScheduledValues(t); master.gain.setTargetAtTime(0,t,0.02);
   setTimeout(()=>{ if(!playing){ ctx.suspend().then(()=>applyVol()).catch(()=>{}); } }, 150);
   setPlayUI();
 }
 function displayNow(){ return ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0); }
 
-// ---------------- preview (when stopped) ----------------
+// ================= preview (when stopped) =================
 let preview=null, previewDirty=true;
 function buildPreview(){
   const tr = Track();
   let t = 0.35;
   const W = windowSec();
-  const sr = 8000;
-  // freeze the respiratory phase so the split is representative
-  while(t < W + 1){ const RR = nextRR(); const b = synthBeat({...S}, RR, t+1.25, sr); trackAdd(tr, b, t-PRE); lastBeat=b; t += RR; }
+  while(t < W + 1){ const RR = nextRR(); const b = synthBeat({...S}, RR, t+1.25, 8000); trackAdd(tr, b, t-PRE); t += RR; }
   tr.now = W - 0.0005;
   preview = tr; previewDirty=false;
 }
 
-// ---------------- drawing ----------------
-const cv = document.getElementById('mon'), g2 = cv.getContext('2d');
+// ================= drawing =================
+const $ = id => document.getElementById(id);
+const cv = $('mon'), g2 = cv.getContext('2d');
 let cw=0, chh=0, dpr=1;
 function resize(){ dpr=Math.min(2,window.devicePixelRatio||1); cw=cv.clientWidth; chh=cv.clientHeight; cv.width=Math.round(cw*dpr); cv.height=Math.round(chh*dpr); g2.setTransform(dpr,0,0,dpr,0,0); previewDirty=true; }
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function windowSec(){ return cw < 520 ? 2.6 : cw < 900 ? 3.4 : 4; }
+const NORMAL_LBL = new Set(['S1','S2','A2','P2']);
 
 function draw(){
   const tr = playing || frozenNow!==null ? live : (previewDirty ? (buildPreview(), preview) : preview);
@@ -526,26 +780,32 @@ function draw(){
   const top = 30, ecgH = chh*0.25, lblY = top+ecgH+16, pcgTop = lblY+8, segH = 22, pcgBot = chh - segH - 8, pcgMid=(pcgTop+pcgBot)/2, pcgHalf=(pcgBot-pcgTop)/2;
   const ecgMid = top + ecgH*0.72;
   g2.fillStyle = css('--mon-bg'); g2.fillRect(0,0,cw,chh);
-  // grid: 0.2 s major, 0.04 s minor, fixed to the sweep
-  for(let t=0;t<=W+1e-6;t+=0.04){ const x=Math.round(t*pxs)+0.5; const major=Math.abs(t/0.2-Math.round(t/0.2))<1e-6; g2.strokeStyle= major?C.grid2:C.grid; g2.lineWidth=1; if(!major && pxs*0.04<7) continue; g2.beginPath(); g2.moveTo(x,top); g2.lineTo(x,chh-6); g2.stroke(); }
+  for(let t=0;t<=W+1e-6;t+=0.04){ const x=Math.round(t*pxs)+0.5; const major=Math.abs(t/0.2-Math.round(t/0.2))<1e-6; if(!major && pxs*0.04<7) continue; g2.strokeStyle= major?C.grid2:C.grid; g2.lineWidth=1; g2.beginPath(); g2.moveTo(x,top); g2.lineTo(x,chh-6); g2.stroke(); }
   g2.strokeStyle=C.grid2; g2.beginPath(); g2.moveTo(0,pcgMid+0.5); g2.lineTo(cw,pcgMid+0.5); g2.stroke();
-  g2.fillStyle=C.txt; g2.font='11px "IBM Plex Mono",monospace'; g2.fillText('ECG',8,top+12); g2.fillText('PCG',8,pcgTop+12);
+  g2.fillStyle=C.txt; g2.font='11px "IBM Plex Mono",monospace'; g2.fillText('ECG',8,top+12); g2.fillText('PCG · '+SITES[S.loc].name,8,pcgTop+12);
 
   const sweepStart = Math.floor(now/W)*W;
   const colTime = px => { let t = sweepStart + px/pxs; if(t>now) t-=W; return t; };
   const inGap = t => playing && (t > now - W) && (t < now - W + gap);
   const visible = t => t <= now && t > now - W + gap && t >= (tr.start||0);
   const xOf = t => ((t - sweepStart + W) % W) * pxs;
-
-  // murmur bands
   const showL = S.labels==='on' && !(quiz && !quiz.done);
+
+  // murmur bands (only where the murmur is audible at this site)
+  const placed=[];
   for(const s of (showL ? tr.seg : [])){
+    if(s.g < 0.35) continue;
     const a=Math.max(s.a, now-W+gap), b=Math.min(s.b, now); if(b<=a) continue;
     const xa=xOf(a), xb=xOf(b);
-    g2.fillStyle='rgba(255,107,122,.13)';
     const parts = xb>=xa ? [[xa,xb]] : [[xa,cw],[0,xb]];
-    for(const [p,q] of parts){ g2.fillRect(p,pcgTop,q-p,pcgBot-pcgTop); g2.fillStyle=C.mur; g2.fillRect(p,pcgBot+6,q-p,4); g2.fillStyle='rgba(255,107,122,.13)'; }
-    if(showL && s.b<=now && s.a>=now-W+gap){ const xm=xb>=xa?(xa+xb)/2:xa+((cw-xa)+xb)/2; g2.fillStyle=C.mur; g2.font='11.5px "IBM Plex Sans",sans-serif'; g2.textAlign='center'; const w=(b-a)*pxs; const lab=g2.measureText(s.l).width<w-4?s.l:(g2.measureText(s.s).width<w+10?s.s:''); if(lab) g2.fillText(lab, xm>cw?xm-cw:xm, pcgBot+22); g2.textAlign='left'; }
+    for(const [p,q] of parts){ g2.fillStyle='rgba(255,107,122,.13)'; g2.fillRect(p,pcgTop,q-p,pcgBot-pcgTop); g2.fillStyle=C.mur; g2.fillRect(p,pcgBot+6,q-p,4); }
+    if(s.b<=now && s.a>=now-W+gap){
+      const xm=xb>=xa?(xa+xb)/2:xa+((cw-xa)+xb)/2;
+      g2.fillStyle=C.mur; g2.font='11.5px "IBM Plex Sans",sans-serif'; g2.textAlign='center';
+      const w=(b-a)*pxs; const lab=g2.measureText(s.l).width<w-4?s.l:(g2.measureText(s.s).width<w+10?s.s:'');
+      const clash = placed.some(q=>s.a<q.b && s.b>q.a); placed.push(s);
+      if(lab) g2.fillText(lab, xm>cw?xm-cw:xm, clash ? pcgTop+14 : pcgBot+22); g2.textAlign='left';
+    }
   }
 
   // traces
@@ -570,16 +830,15 @@ function draw(){
   }
   g2.stroke();
 
-  // event labels
+  // event labels (only for sounds audible at this site)
   if(showL){
     g2.font='600 12.5px "IBM Plex Mono",monospace'; g2.textAlign='center';
     const lastX=[-99,-99,-99]; let row=0;
-    const evs = tr.ev.filter(e=>visible(e.t)).sort((a,b)=>a.t-b.t);
+    const evs = tr.ev.filter(e=>visible(e.t) && e.g>=0.2).sort((a,b)=>a.t-b.t);
     for(const e of evs){
       const x=xOf(e.t);
       row = lastX.findIndex(v=>x-v>24); if(row<0) row=2;
-      const isMur = e.l==='OS'||e.l==='C'||e.l==='S3'||e.l.startsWith('↑');
-      g2.fillStyle = isMur ? C.mur : C.evt;
+      g2.fillStyle = NORMAL_LBL.has(e.l) ? C.evt : C.mur;
       g2.fillText(e.l, x, lblY - row*14);
       g2.strokeStyle='rgba(230,237,242,.18)'; g2.beginPath(); g2.moveTo(x+0.5,lblY+3); g2.lineTo(x+0.5,pcgBot); g2.stroke();
       lastX[row]=x;
@@ -587,19 +846,68 @@ function draw(){
     g2.textAlign='left';
   }
 
-  // sweep cursor
   if(playing){ const x=xOf(now); g2.fillStyle='rgba(255,255,255,.55)'; g2.fillRect(x,top,2,chh-top-6); }
 
-  // respiration readout
   let r=null; for(const q of tr.resp){ if(q.t<=now) r=q.v; }
-  const rx=document.getElementById('monRx');
-  if(r!==null){ const txt = r>0 ? 'Inspiration' : 'Expiration'; const lbl = `${txt} ${r>0?'▲':'▼'}`; if(rx.textContent!==lbl) rx.innerHTML = `<b>${lbl}</b>`; }
+  const rx=$('monRx');
+  if(r!==null){ const lbl = r>0 ? 'Inspiration ▲' : 'Expiration ▼'; if(rx.textContent!==lbl) rx.innerHTML = `<b>${lbl}</b>`; }
 }
-
 function frame(){ draw(); requestAnimationFrame(frame); }
 
-// ---------------- UI ----------------
-const $ = id => document.getElementById(id);
+// ================= chest map =================
+const SVGNS='http://www.w3.org/2000/svg';
+function el(tag, attrs, parent){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+(function buildChest(){
+  const ribs=$('ribs');
+  // ribs 2–7 on each side, curving down and out from the sternum
+  [[84,30],[110,32],[136,34],[162,36],[190,36],[218,34]].forEach(([y,drop],i)=>{
+    el('path',{class:'rib',d:`M158 ${y} C 200 ${y-6}, 240 ${y+4}, ${262-i*2} ${y+drop}`},ribs);
+    el('path',{class:'rib',d:`M142 ${y} C 100 ${y-6}, 60 ${y+4}, ${38+i*2} ${y+drop}`},ribs);
+  });
+  const spots=$('spots');
+  for(const k of Object.keys(SITES)){
+    const s=SITES[k], left = (k==='A'||k==='C');
+    const g=el('g',{class:'spot'+(s.minor?' minor':''),'data-loc':k,tabindex:0,role:'button','aria-label':s.name},spots);
+    el('circle',{class:'hit',cx:s.x,cy:s.y,r:20},g);
+    el('circle',{class:'dot',cx:s.x,cy:s.y,r:9},g);
+    const t=el('text',{x:s.x+(left?-14:14),y:s.y+4,'text-anchor':left?'end':'start'},g); t.textContent=s.short;
+    const pick=()=>{ S.loc=k; changed(); };
+    g.addEventListener('click',pick);
+    g.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); } });
+  }
+})();
+function updateChest(){
+  const s=SITES[S.loc];
+  $('steth').style.transform=`translate(${s.x}px, ${s.y}px)`;
+  const best = COND[S.lesion].best, hide = quiz && !quiz.done;
+  document.querySelectorAll('.spot').forEach(g=>{ g.classList.toggle('best', !hide && g.dataset.loc===best); g.setAttribute('aria-pressed', g.dataset.loc===S.loc); });
+  let tag = '';
+  if(!hide) tag = S.loc===best ? '<br><span class="best-tag">● Best site for this condition</span>' : `<br><span class="best-tag">Best heard: ${SITES[best].name}</span>`;
+  $('whereNow').innerHTML = `<b>${s.name}</b><span>${s.desc}</span>${tag}`;
+}
+
+// ================= UI =================
+(function buildPicker(){
+  const pk=$('picker');
+  for(const gname of GROUPS){
+    const g=document.createElement('div'); g.className='grp';
+    g.innerHTML=`<div class="gl">${gname}</div><div class="chips"></div>`;
+    for(const k of ORDER.filter(k=>COND[k].grp===gname)){
+      const b=document.createElement('button'); b.className='chip'; b.dataset.lesion=k; b.textContent=COND[k].name; b.title=COND[k].full;
+      b.addEventListener('click',()=>selectLesion(k));
+      g.querySelector('.chips').appendChild(b);
+    }
+    pk.appendChild(g);
+  }
+})();
+function selectLesion(k){
+  if(quiz && !quiz.done) return;
+  if(quiz) endQuiz();
+  if(k==='mavr' && S.lesion!=='mavr') S.sev='mild';
+  else if(S.lesion==='mavr' && k!=='mavr') S.sev='moderate';
+  S.lesion=k; S.loc=COND[k].best;
+  changed();
+}
 function setPlayUI(){
   $('play').setAttribute('aria-pressed', playing);
   $('playLbl').textContent = playing ? 'Stop' : 'Play';
@@ -608,48 +916,59 @@ function setPlayUI(){
 }
 function changed(){ previewDirty = true; if(!playing){ frozenNow = null; live = null; setPlayUI(); } updateUI(); }
 function updateUI(){
-  document.querySelectorAll('.lesion').forEach(b=>b.setAttribute('aria-pressed', b.dataset.lesion===S.lesion && !(quiz&&!quiz.done) ? 'true':'false'));
+  const hide = quiz && !quiz.done, c = COND[S.lesion];
+  document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', b.dataset.lesion===S.lesion && !hide ? 'true':'false'));
   document.querySelectorAll('.seg').forEach(sg=>{ const k=sg.dataset.key; sg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===S[k]?'true':'false')); });
   $('hr').value=S.hr; $('hrOut').textContent=S.hr+' bpm';
-  $('grade').value=S.grade; $('gradeOut').textContent=S.grade+' / 6';
-  const hide = quiz && !quiz.done;
-  $('ctlGrade').classList.toggle('hidden', hide || !(S.lesion==='mr'||S.lesion==='mvp'));
-  $('ctlSev').classList.toggle('hidden', hide || S.lesion!=='ms');
-  $('ctlPos').classList.toggle('hidden', hide || S.lesion!=='mvp');
-  $('sevOut').textContent = S.lesion==='ms' ? `A2–OS ${Math.round(SEV_A2OS[S.sev]*1000*(S.hr>90?0.9:1))} ms` : '';
-  $('posOut').textContent = POS_LBL[S.pos];
+  $('ctlSev').classList.toggle('hidden', !!hide || !c.sev);
+  if(c.sev){
+    const btns=$('ctlSev').querySelectorAll('button'); c.sev.forEach((l,i)=>btns[i].textContent=l);
+    $('sevTitle').textContent = c.sevTitle || 'Severity';
+    $('sevOut').textContent = S.lesion==='ms' ? `A2–OS ${Math.round(SEV_A2OS[S.sev]*1000*(S.hr>90?0.9:1))} ms` : '';
+    $('sevNote').textContent = S.lesion==='ms' ? 'A shorter A2–opening snap interval and a longer rumble mean higher LA pressure.' : '';
+  }
+  $('ctlPos').classList.toggle('hidden', !!hide || !c.pos);
+  if(c.pos) $('posNote').textContent = POS_NOTE[S.lesion];
   $('monHR').textContent = `HR ${S.hr} · ${S.rhythm==='af'?'AF':'Sinus'}`;
   $('notes').classList.toggle('hidden', !!hide);
+  updateChest();
   renderNotes();
 }
 function renderNotes(){
-  const i=INFO[S.lesion];
-  const leg = `<div class="legend"><span><i style="background:#4fe39a"></i>ECG</span><span><i style="background:#ffd166"></i>Phonocardiogram</span><span><i style="background:#ff6b7a"></i>Murmur, snap, click, S3</span></div>`;
-  $('notes').innerHTML = `<h3>${i.name}</h3><p class="where">${i.where}</p><ul>${i.bullets.map(b=>`<li>${b}</li>`).join('')}</ul><div class="try"><b>Try:</b> ${i.tryit}</div>${leg}`;
+  const i=INFO[S.lesion], c=COND[S.lesion];
+  const leg = `<div class="legend"><span><i style="background:#4fe39a"></i>ECG</span><span><i style="background:#ffd166"></i>Phonocardiogram</span><span><i style="background:#ff6b7a"></i>Added sounds and murmurs</span></div>`;
+  $('notes').innerHTML = `<h3>${c.full}</h3><p class="where">${i.where}</p><ul>${i.bullets.map(b=>`<li>${b}</li>`).join('')}</ul><div class="try"><b>Try:</b> ${i.tryit}</div>${leg}`;
+}
+function reset(){
+  if(quiz){ quiz.done=true; endQuiz(); }
+  Object.assign(S, DEFAULTS);
+  $('vol').value = 70; S.vol = 0.7; applyVol(); applyPiece();
+  changed();
 }
 
-document.querySelectorAll('.lesion').forEach(b=>b.addEventListener('click',()=>{ if(quiz&&!quiz.done) return; S.lesion=b.dataset.lesion; if(quiz) endQuiz(); changed(); }));
 document.querySelectorAll('.seg').forEach(sg=>sg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; S[sg.dataset.key]=b.dataset.v; if(sg.dataset.key==='piece') applyPiece(); changed(); }));
 $('hr').addEventListener('input',e=>{ S.hr=+e.target.value; changed(); });
-$('grade').addEventListener('input',e=>{ S.grade=+e.target.value; changed(); });
 $('vol').addEventListener('input',e=>{ S.vol=e.target.value/100; applyVol(); });
 $('play').addEventListener('click',()=>{ playing ? stop() : start(); });
-document.addEventListener('keydown',e=>{ if(e.code==='Space' && !/INPUT|BUTTON/.test(document.activeElement.tagName)){ e.preventDefault(); playing?stop():start(); } });
+$('resetBtn').addEventListener('click', reset);
+document.addEventListener('keydown',e=>{ const a=document.activeElement; if(e.code==='Space' && !/INPUT|BUTTON/.test(a.tagName) && !(a.classList && a.classList.contains('spot'))){ e.preventDefault(); playing?stop():start(); } });
 
-// ---------------- mystery mode ----------------
-const CHOICES = [['normal','Normal heart sounds'],['mr','Mitral regurgitation'],['ms','Mitral stenosis'],['mvp','Mitral valve prolapse']];
+// ================= mystery mode =================
 function newMystery(){
-  const pick = CHOICES[Math.floor(Math.random()*4)][0];
-  S.lesion = pick;
-  S.hr = 58 + Math.floor(Math.random()*30);
-  S.rhythm = (pick==='ms'||pick==='mr') && Math.random()<0.3 ? 'af' : 'sinus';
-  S.grade = 2 + Math.floor(Math.random()*3);
-  S.sev = ['mild','moderate','severe'][Math.floor(Math.random()*3)];
+  const pick = ORDER[Math.floor(Math.random()*ORDER.length)];
+  S.lesion = pick; S.loc = COND[pick].best;
+  S.hr = 58 + Math.floor(Math.random()*28);
+  S.rhythm = ['ms','mr','hfref'].includes(pick) && Math.random()<0.3 ? 'af' : 'sinus';
+  S.sev = pick==='mavr' ? (Math.random()<0.6?'mild':['moderate','severe'][Math.floor(Math.random()*2)]) : ['mild','moderate','severe'][Math.floor(Math.random()*3)];
+  if(pick==='hcm' && S.sev==='mild') S.sev='moderate';
   S.pos = ['squat','supine','stand'][Math.floor(Math.random()*3)];
   quiz = {answer:pick, done:false};
+  const others = ORDER.filter(k=>k!==pick).sort(()=>Math.random()-0.5).slice(0,3);
+  const opts = [pick,...others].sort(()=>Math.random()-0.5);
   $('quiz').classList.remove('hidden');
-  $('quizFb').textContent=''; $('quizQ').textContent='Listen to the timing against the ECG. What is it?';
-  $('quizOpts').innerHTML = CHOICES.map(([k,l])=>`<button data-k="${k}">${l}</button>`).join('');
+  $('quizFb').textContent='';
+  $('quizQ').textContent=`The stethoscope starts at the ${SITES[S.loc].name.toLowerCase()}. Listen against the ECG and move it if you like. What is it?`;
+  $('quizOpts').innerHTML = opts.map(k=>`<button data-k="${k}">${COND[k].full}</button>`).join('');
   $('quizScore').textContent = score.total ? `${score.right} / ${score.total}` : '';
   changed();
   if(!playing) start();
@@ -663,20 +982,16 @@ $('quizOpts').addEventListener('click', e=>{
   quiz.done=true; score.total++;
   const ok = b.dataset.k===quiz.answer; if(ok) score.right++;
   $('quizOpts').querySelectorAll('button').forEach(x=>{ if(x.dataset.k===quiz.answer) x.classList.add('right'); else if(x===b) x.classList.add('wrong'); });
-  const why = {
-    normal:'Only S1 and S2, with no extra sounds and no murmur. S2 splits on inspiration.',
-    mr:'A murmur fills all of systole from S1 to S2, with a soft S1.',
-    ms:'Loud S1, an opening snap just after S2, then a low rumble through diastole.',
-    mvp:'A click part-way through systole followed by a murmur rising up to S2.'
-  }[quiz.answer];
-  $('quizFb').innerHTML = `${ok?'<b>Correct.</b>':'<b>Not quite.</b>'} ${why} Labels and controls are back on so you can explore it.`;
+  const c = COND[quiz.answer];
+  const sevTxt = c.sev ? ` (${c.sev[{mild:0,moderate:1,severe:2}[S.sev]].toLowerCase()})` : '';
+  $('quizFb').innerHTML = `${ok?'<b>Correct.</b>':'<b>Not quite.</b>'} It was ${c.full.toLowerCase()}${sevTxt}. Labels and notes are back on so you can explore it.`;
   $('quizScore').textContent = `${score.right} / ${score.total}`;
   changed();
 });
 
 window.addEventListener('resize', resize);
 resize(); updateUI(); requestAnimationFrame(frame);
-window.HSApp = {S, synthBeat, get playing(){return playing}, start, stop};
+window.HSApp = {S, synthBeat, COND, SITES, get playing(){return playing}, start, stop, reset};
 })();
 </script>
 </body>

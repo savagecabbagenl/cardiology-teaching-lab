@@ -370,6 +370,7 @@ function save(){ try { sessionStorage.setItem("tt:"+S.meta.id, JSON.stringify({i
    {r: R height, q: Q depth, s: S depth, st: ST offset at J point (+ elevation / − depression),
     t: T amplitude (negative = inverted), p: P amplitude}
    A lead may be given as a string to copy another lead's shape. */
+const qrsF = w => 1+(w-1)/6;   // QRS stretch factor for a width setting w
 function beatPts(L){
   const pts=[], p=L.p==null?1.2:L.p, q=L.q||0, r=L.r==null?8:L.r, s=L.s||0, j=L.st||0, t=L.t==null?2.5:L.t;
   pts.push([0,0]);
@@ -380,8 +381,8 @@ function beatPts(L){
   for(let k=1;k<=28;k++){const u=k/28; const base = u<0.45 ? j : j*(1-Math.pow((u-0.45)/0.55,1.4));
     const bump=t*Math.pow(Math.sin(Math.PI*Math.max(0,(u-0.12)/0.88)),1.4);
     pts.push([7.0+8.5*u, base+bump]);}
-  // w = QRS width multiplier (1 = narrow ~40 ms; 3.5–4 = wide ~140–160 ms)
-  const w=L.w||1; if (w!==1) return pts.map(([x,y])=>[x<=4.2?x:(x<=7.0?4.2+(x-4.2)*w:x+2.8*(w-1)),y]);
+  // w = QRS width setting (1 = narrow, about 110 ms to the J point; 3 ≈ 150 ms; 4 ≈ 170 ms)
+  const F=qrsF(L.w||1); if (F!==1) return pts.map(([x,y])=>[x<=4.2?x:(x<=7.0?4.2+(x-4.2)*F:x+2.8*(F-1)),y]);
   return pts;
 }
 function renderECG(spec){
@@ -397,32 +398,39 @@ function renderECG(spec){
   const leadOf = n => { let L=spec.leads[n]; let guard=0; while(typeof L==="string" && guard++<5) L=spec.leads[L]; return L||{r:0,t:0,p:0}; };
   const frac = v => v - Math.floor(v);
   const irr = spec.af && !spec.regular; const rrMin = irr ? rr*0.75 : rr;
-  const wMax = Math.max(1,...Object.values(spec.leads).map(L=>(L&&L.w)||1)); const sc = Math.max(0.35, Math.min(1, (rrMin-(4.6+2.8*wMax))/8.5));   // shorten ST-T at fast rates
-  const drawStrip = (name, x0, y0, w, label, offset) => {
+  const wMax = Math.max(1,...Object.values(spec.leads).map(L=>(L&&L.w)||1)); 
+  // All leads share one time base, as on a real 12-lead: a beat drawn in V2 sits directly above the same beat
+  // in the rhythm strip. The calibration pulse fills the first 8 mm of each row; tracings start after it.
+  const CAL=8, T0=CAL+1.5;
+  const rrAt = i => irr ? rr*(0.75+0.75*frac(Math.sin((i+1)*12.9898)*43758.5453)) : rr;
+  const starts=[]; for(let s=T0,k=0; s<W; s+=rrAt(k++)) starts.push(s);
+  const fib = X => spec.af ? (0.35*Math.sin(X*2.1)+0.25*Math.sin(X*3.7+1)) : 0;
+  const drawStrip = (name, x0, y0, w, label) => {
     const L0=leadOf(name), L=spec.af?Object.assign({},L0,{p:0}):L0;
-    const jx=4.2+2.8*(L.w||1); const b=beatPts(L).map(([px,py])=>[px<=jx?px:jx+(px-jx)*sc, py]); let d="";
-    const seed=(name.length*7+(x0|0))%13;
-    const rrAt = i => irr ? rr*(0.75+0.75*frac(Math.sin((i+seed+1)*12.9898)*43758.5453)) : rr;
-    const fib = X => spec.af ? (0.35*Math.sin(X*2.1)+0.25*Math.sin(X*3.7+1)) : 0;
-    let x=x0, base=y0+rowH*0.62;
-    const seg=(a,e)=>{ if(spec.af){ for(let X=a;X<=e;X+=0.5) d+=`L${(X*MM).toFixed(1)} ${((base-fib(X))*MM).toFixed(1)}`; } else d+=`L${(e*MM).toFixed(1)} ${(base*MM).toFixed(1)}`; };
-    // calibration pulse at strip start
-    if (x0===0){ d+=`M${x*MM} ${base*MM}h${1*MM}v${-10*MM}h${5*MM}v${10*MM}h${1*MM}`; x+=8; } else { d+=`M${x*MM} ${base*MM}`; }
-    let start=x+(offset||1.5), k=0;
-    seg(x,start);
-    while(start < x0+w-1){
-      let lastX=start;
-      if (start+b[b.length-1][0] > x0+w-0.5) { seg(start, x0+w-0.5); break; } // never draw a clipped beat
-      for(const [px,py] of b){ const X=start+px; if (X>x0+w-0.5) break; d+=`L${(X*MM).toFixed(1)} ${((base-py)*MM).toFixed(1)}`; lastX=X; }
-      const next=start+rrAt(k++); const endB=Math.min(next, x0+w-0.5);
-      if (lastX<endB) seg(lastX,endB);
-      start=next;
-    }
-    if (spec.highlight && spec.highlight.includes(name)) g+=`<rect class="hl" x="${x0*MM}" y="${y0*MM}" width="${w*MM}" height="${rowH*MM}"/>`;
+    // With no P wave (VT, junctional, AF) the PR space is dropped so the QRS starts near the beat time.
+    // spec.pr (ms) lengthens the PR interval by moving the QRS and everything after it later in the beat
+    const prX = (spec.pr && L.p!==0) ? Math.max(0, spec.pr/40-3.8) : 0;
+    const pre = L.p===0 ? 3.6 : 0, jx=4.2+2.8*qrsF(L.w||1)-pre+prX;
+    const scL = Math.max(0.35, Math.min(1, (rrMin-(4.2+2.8*qrsF(wMax)-pre+prX+0.4))/8.5));   // shorten ST-T so it fits the shortest R-R
+    const b=beatPts(L).filter(([px])=>px===0||px>=pre).map(([px,py])=>[Math.max(0,px-pre),py]).map(([px,py])=>[px>=4.2?px+prX:px,py]).map(([px,py])=>[px<=jx?px:jx+(px-jx)*scL, py]);
+    const blen=b[b.length-1][0], base=y0+rowH*0.62;
+    const xs = x0===0 ? CAL : x0, xe = x0+w-0.3;
+    // whole-width waveform for this lead, then cut to the strip window with interpolated ends
+    const all=[]; let X=CAL;
+    const flat=(a,e)=>{ for(let Y=a; Y<e; Y+=0.5) all.push([Y,fib(Y)]); };
+    starts.forEach((s,i)=>{ const nx=i+1<starts.length?starts[i+1]:Infinity; if (s > X) flat(X, s);
+      for(const [px,py] of b){ if (s+px >= nx) break; all.push([s+px, py+fib(s+px)]); } X = Math.min(s+blen, nx); });
+    if (X < W) flat(X, W); all.push([W, fib(W)]);
+    const at = x => { for(let i=1;i<all.length;i++){ const [x1,y1]=all[i-1],[x2,y2]=all[i]; if (x2>=x) return x2===x1?y2:y1+(y2-y1)*(x-x1)/(x2-x1); } return 0; };
+    const pts=[[xs,at(xs)], ...all.filter(([x])=>x>xs && x<xe), [xe,at(xe)]];
+    let d = x0===0 ? `M0 ${base*MM}h${1*MM}v${-10*MM}h${5*MM}v${10*MM}h${2*MM}` : `M${(xs*MM).toFixed(1)} ${((base-pts[0][1])*MM).toFixed(1)}`;
+    for(const [px,py] of pts) d+=`L${(px*MM).toFixed(1)} ${((base-py)*MM).toFixed(1)}`;
+    if (spec.highlight && spec.highlight.includes(name) && w<W) g+=`<rect class="hl" x="${x0*MM}" y="${y0*MM}" width="${w*MM}" height="${rowH*MM}"/>`;
     g+=`<path class="trace" d="${d}"/>`;
+    if (x0>0) g+=`<path class="trace" d="M${(x0*MM).toFixed(1)} ${((base-3)*MM).toFixed(1)}v${6*MM}" style="stroke-width:1.5"/>`;
     g+=`<text x="${(x0+ (x0===0?9:1.5))*MM}" y="${(y0+5)*MM}">${esc(label||name)}</text>`;
   };
-  rows.forEach((row,ri)=>{ const cw=W/row.length; row.forEach((name,ci)=>drawStrip(name, ci*cw, ri*rowH, cw, (spec.labels||{})[name], ci===0?1.5:(ci*1.3)%rr)); });
+  rows.forEach((row,ri)=>{ const cw=W/row.length; row.forEach((name,ci)=>drawStrip(name, ci*cw, ri*rowH, cw, (spec.labels||{})[name])); });
   if (rhythm) drawStrip(spec.rhythm, 0, rows.length*rowH, W, (spec.labels||{})[spec.rhythm]||spec.rhythm+" (rhythm)");
   g+=`</svg>`;
   return g;

@@ -1,5 +1,5 @@
 // Offline support: every page is cached on first visit, pages refresh from the network when online.
-const VERSION = 'ctl-v15';
+const VERSION = 'ctl-v16';
 const PRECACHE = [
   "./",
   "index.html",

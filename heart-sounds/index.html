@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Heart Sounds Simulator</title>
-<meta name="description" content="Synthesised heart sounds and murmurs for 15 conditions, with a chest map of the auscultation areas and a live phonocardiogram.">
+<meta name="description" content="Synthesised heart sounds and murmurs for 18 conditions, with a chest map of the auscultation areas and a live phonocardiogram.">
 <meta name="theme-color" content="#14202b">
 <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
@@ -266,7 +266,9 @@ const PROF = {
   ec:  {A:.9, P:.6, E:.7, T:.6, M:1,  X:.3, C:.3},    // aortic ejection click
   os:  {A:.35,P:.5, E:.7, T:.85,M:1,  X:.4, C:.1},
   mech:{A:1,  P:.9, E:.9, T:.8, M:.8, X:.6, C:.7},
-  rub: {A:.45,P:.7, E:.9, T:1,  M:.6, X:.15,C:.05}
+  rub: {A:.45,P:.7, E:.9, T:1,  M:.6, X:.15,C:.05},
+  gal: {A:.12,P:.12,E:.3, T:.5, M:1,  X:.6, C:.04},   // Gallavardin: musical apical component of AS
+  gs:  {A:.45,P:1,  E:.95,T:.55,M:.2, X:.05,C:.15}    // Graham Steell: left 2nd-3rd ICS
 };
 
 // ================= conditions =================
@@ -278,10 +280,12 @@ const COND = {
   ms:  {name:'MS', full:'Mitral stenosis', grp:'Left heart valves', best:'M', sev:DEF_SEV},
   mr:  {name:'MR', full:'Mitral regurgitation', grp:'Left heart valves', best:'M', sev:DEF_SEV},
   mvp: {name:'MVP', full:'Mitral valve prolapse', grp:'Left heart valves', best:'M', sev:DEF_SEV},
+  amr: {name:'Acute MR', full:'Acute mitral regurgitation', grp:'Left heart valves', best:'M', sev:DEF_SEV},
   mavr:{name:'Mechanical AVR', full:'Mechanical aortic valve', grp:'Left heart valves', best:'A', sev:['Normal','Obstructed','Paravalvular leak'], sevTitle:'Valve function'},
   tr:  {name:'TR', full:'Tricuspid regurgitation', grp:'Right heart valves', best:'T', sev:DEF_SEV},
   ps:  {name:'PS', full:'Pulmonary stenosis', grp:'Right heart valves', best:'P', sev:DEF_SEV},
   pr:  {name:'PR', full:'Pulmonary regurgitation', grp:'Right heart valves', best:'P', sev:DEF_SEV},
+  gs:  {name:'Graham Steell', full:'Graham Steell murmur (PR with pulmonary hypertension)', grp:'Right heart valves', best:'E', sev:DEF_SEV},
   asd: {name:'ASD', full:'Atrial septal defect', grp:'Shunts', best:'P', sev:['Small','Moderate','Large'], sevTitle:'Shunt size'},
   vsd: {name:'VSD', full:'Ventricular septal defect', grp:'Shunts', best:'T', sev:['Small','Moderate','Large + PHT'], sevTitle:'Defect size'},
   pda: {name:'PDA', full:'Patent ductus arteriosus', grp:'Shunts', best:'P', sev:['Small','Moderate','Large'], sevTitle:'Duct size'},
@@ -289,13 +293,13 @@ const COND = {
   hcm: {name:'HCM / HOCM', full:'Hypertrophic cardiomyopathy', grp:'Myocardium', best:'T', sev:['Latent obstruction','Moderate LVOTO','Severe LVOTO'], sevTitle:'Outflow obstruction'},
   peri:{name:'Pericarditis', full:'Acute pericarditis', grp:'Myocardium', best:'T', sev:['One component','Two components','Three components'], sevTitle:'Friction rub'}
 };
-const ORDER = ['normal','as','ar','ms','mr','mvp','mavr','tr','ps','pr','asd','vsd','pda','hfref','hcm','peri'];
+const ORDER = ['normal','as','ar','ms','mr','amr','mvp','mavr','tr','ps','pr','gs','asd','vsd','pda','hfref','hcm','peri'];
 const GROUPS = ['Normal','Left heart valves','Right heart valves','Shunts','Myocardium'];
 // timing family, used to pick believable wrong answers in the quiz
-const FAMILY = {normal:'x',hfref:'x',peri:'x',as:'s',mr:'s',mvp:'s',tr:'s',ps:'s',vsd:'s',hcm:'s',asd:'s',mavr:'s',ar:'d',ms:'d',pr:'d',pda:'d'};
+const FAMILY = {normal:'x',hfref:'x',peri:'x',as:'s',mr:'s',mvp:'s',tr:'s',ps:'s',vsd:'s',hcm:'s',asd:'s',mavr:'s',ar:'d',ms:'d',pr:'d',pda:'d',amr:'s',gs:'d'};
 const KEYFIND = {
   normal:'Only S1 and S2, with physiological splitting of S2 in the pulmonary area.',
-  as:'Harsh crescendo–decrescendo systolic murmur loudest at the aortic area and carotid; later peak and softer A2 when severe.',
+  as:'Harsh crescendo–decrescendo systolic murmur loudest at the aortic area and carotid; later peak and softer A2 when severe. At the apex it can sound musical (Gallavardin).',
   ar:"Blowing early diastolic decrescendo murmur at Erb's point, loudest sitting forward in expiration.",
   ms:'Loud S1, opening snap and low diastolic rumble at the apex, loudest in the left lateral position with the bell.',
   mr:'Blowing holosystolic murmur at the apex radiating to the axilla; louder with handgrip.',
@@ -304,6 +308,8 @@ const KEYFIND = {
   tr:'Holosystolic murmur at the lower left sternal edge that is louder on inspiration.',
   ps:'Ejection systolic murmur in the pulmonary area, with an ejection click that softens on inspiration and a soft, late P2.',
   pr:'Diastolic murmur after P2 in the pulmonary area, louder on inspiration.',
+  gs:'High-pitched early diastolic decrescendo murmur straight after a loud P2 at the left 2nd–3rd ICS: PR from pulmonary hypertension, easily mistaken for AR.',
+  amr:'Early systolic decrescendo murmur that stops well before S2, with an S4 and S3 in a sick, breathless patient; shorter and softer as it gets more severe.',
   asd:'Wide, fixed splitting of S2 with a pulmonary flow murmur (a small defect may have near-normal splitting).',
   vsd:'Harsh holosystolic murmur at the lower left sternal edge; loudest with small defects.',
   pda:'Continuous machinery murmur peaking at S2 below the left clavicle.',
@@ -325,8 +331,8 @@ const INFO = {
       'Severe AS prolongs ejection, so A2 can fall after P2 (<b>reversed splitting</b>), and a stiff hypertrophied LV gives an <b>S4</b>.',
       'An <b>ejection click</b> after S1 suggests a mobile (often bicuspid) valve; it disappears as the valve calcifies and is rare in older patients with calcific AS.',
       'Feel the carotid: a <b>slow-rising, low-volume pulse</b> (parvus et tardus) is one of the strongest bedside signs of severe AS.',
-      'Radiates to the carotids. At the apex it can sound higher-pitched and musical (Gallavardin phenomenon) and be mistaken for MR.'],
-    tryit:'Step from <b>Mild</b> to <b>Severe</b> and watch the peak slide later and A2 fade. Then listen at the <b>carotid</b> and the <b>apex</b>.'},
+      'Radiates to the carotids. <b>Gallavardin phenomenon</b>: in calcific AS the high-frequency part of the murmur radiates to the apex, where it sounds <b>musical</b> (a cooing tone) and can be mistaken for MR. Unlike MR it is ejection in shape, stops before S2, gets softer with handgrip and does not radiate to the axilla.'],
+    tryit:'Step from <b>Mild</b> to <b>Severe</b> and watch the peak slide later and A2 fade. Then listen at the <b>carotid</b>, and at the <b>apex</b> with Moderate or Severe AS for the musical Gallavardin tone. Try <b>Handgrip</b> there: it softens, unlike MR.'},
   ar:{where:"Left 3rd ICS (Erb's point) · sitting forward, breath held in expiration · diaphragm",
     bullets:['<b>Early diastolic, decrescendo</b>, high-pitched, blowing murmur starting straight after A2. Soft and easy to miss.',
       'Longer murmurs mean more severe chronic AR; in severe AR it lasts through most of diastole.',
@@ -348,6 +354,20 @@ const INFO = {
       '<b>S3</b> in severe MR from the large volume returning in early diastole; it reflects volume load, not necessarily failure. A short apical flow rumble can follow it.',
       'Louder with handgrip (afterload), softer with Valsalva.'],
     tryit:'Listen at the <b>apex</b>, then move to the <b>axilla</b> to follow the radiation. Compare <b>Handgrip</b> (louder) with <b>Valsalva</b> (softer).'},
+  gs:{where:'Left 2nd–3rd ICS · diaphragm, pressed firmly · sitting forward, breath held out',
+    bullets:['<b>High-pitched, blowing, early diastolic decrescendo</b> murmur starting <b>straight after a loud P2</b>: pulmonary regurgitation driven by a high PA diastolic pressure.',
+      'It sounds almost exactly like <b>AR</b>. Clues to Graham Steell: a <b>loud P2</b> (often palpable), a narrow S2 split, an RV heave, raised JVP, and no wide pulse pressure or collapsing pulse.',
+      'It may get a little louder on <b>inspiration</b>, but much less consistently than low-pressure PR.',
+      'Classically described in mitral stenosis with severe pulmonary hypertension; now seen in any cause of severe PH, including Eisenmenger physiology.',
+      'Echo is needed to tell it from AR: many murmurs called Graham Steell in MS turn out to be AR.'],
+    tryit:'At <b>Erb\'s point</b>, compare this with <b>AR</b>: both are early diastolic and blowing. Then move to the <b>pulmonary area</b> and listen to the loud P2, which AR does not have.'},
+  amr:{where:'Apex · may radiate to the base and neck (posterior leaflet) or axilla (anterior leaflet) · diaphragm',
+    bullets:['<b>Early systolic, decrescendo</b> murmur that stops well before S2. A small, non-compliant LA builds a large <b>v wave</b>, so the LV–LA gradient collapses in late systole.',
+      'The more severe the leak, the <b>shorter and softer</b> the murmur. Acute severe MR can be <b>almost silent</b>, so do not let a soft murmur reassure you.',
+      'An <b>S4</b> (the LA contracts vigorously into a normal-sized LV) and often an <b>S3</b>. A loud P2 reflects acute pulmonary hypertension.',
+      'Causes: <b>papillary muscle rupture</b> after inferior or posterior MI (typically days 2–7), chordal rupture in degenerative disease, and endocarditis.',
+      'The patient is usually tachycardic, hypotensive and in pulmonary oedema, with a normal-sized heart. A posterior leaflet flail jet can radiate to the base and mimic AS.'],
+    tryit:'Compare <b>Acute MR</b> with chronic <b>MR</b> at the apex: the acute murmur fades away by mid-systole. Step from <b>Mild</b> to <b>Severe</b> and hear it get <b>shorter and quieter</b>.'},
   mvp:{where:'Apex or lower left sternal edge · diaphragm · examine standing and squatting',
     bullets:['<b>Mid-systolic click</b> as the prolapsing leaflet and chordae tense suddenly.',
       '<b>Late systolic murmur</b> after the click, rising up to S2, from late loss of coaptation.',
@@ -378,7 +398,7 @@ const INFO = {
   pr:{where:'Left 2nd–3rd ICS · diaphragm · louder on inspiration',
     bullets:['<b>Diastolic murmur</b> after P2 in the pulmonary area. Its shape and pitch depend on the pulmonary artery pressure.',
       'With normal pulmonary pressures (for example after tetralogy of Fallot repair) it is <b>low-pitched</b> and starts just after P2.',
-      'With pulmonary hypertension it is <b>high-pitched and blowing</b> (Graham Steell) and follows a loud P2.',
+      'With pulmonary hypertension it is <b>high-pitched and blowing</b> and follows a loud P2: the <b>Graham Steell</b> murmur, which has its own button.',
       'Louder on <b>inspiration</b>, which helps to separate it from AR.',
       'In <b>severe free PR</b> the murmur is <b>short</b>, because PA and RV diastolic pressures equalise early.'],
     tryit:'Compare <b>Moderate</b> with <b>Severe</b>: the severe murmur is louder but shorter. Then listen at <b>Erb\'s point</b> and compare with AR.'},
@@ -439,18 +459,20 @@ const MANS = {
 const MAN_ORDER = ['supine','lld','lean','insp','valsalva','squat','sq2st','handgrip'];
 const SQ2ST_SQUAT_MS = 6000;
 // main profile key of each condition's murmur, for the "effect here" line
-const MAINK = {as:'ao',ar:'ar',ms:'lv',mr:'mr',mvp:'mvp',mavr:'ao',tr:'tr',ps:'pu',pr:'pu',asd:'pu',vsd:'vsd',pda:'pu',hfref:'lv',hcm:'hcm',peri:'rub'};
+const MAINK = {gs:'gs',amr:'mr',as:'ao',ar:'ar',ms:'lv',mr:'mr',mvp:'mvp',mavr:'ao',tr:'tr',ps:'pu',pr:'pu',asd:'pu',vsd:'vsd',pda:'pu',hfref:'lv',hcm:'hcm',peri:'rub'};
 const RIGHT = new Set(['tr','rv','pu']);
 function manGain(man, k, les){
   if(les==='mvp' && k==='mr') return {valsalva:1.15, stand:1.15, squat:0.8, handgrip:1.05, lld:1.2}[man] || 1;
   if(k==='mech') return 1;
+  if(k==='gal') k='ao';
+  if(les==='gs' && man==='insp') return 1;
   switch(man){
     case 'valsalva': return k==='hcm' ? 1.8 : 0.6;
     case 'stand':    return k==='hcm' ? 1.7 : 0.75;
     case 'squat':    return k==='hcm' ? 0.45 : 1.2;
     case 'handgrip': if(les==='pda' && k==='pu') return 1.4; return ({mr:1.4, ar:1.4, vsd:1.4, ao:les==='mavr'?1:0.7, hcm:0.6})[k] || 1;
     case 'lld':      return ({lv:1.8, mr:1.3, os:1.2})[k] || 1;
-    case 'lean':     return ({ar:1.8, rub:1.7, ao:1.1})[k] || 1;
+    case 'lean':     return ({ar:1.8, gs:1.5, rub:1.7, ao:1.1})[k] || 1;
     case 'insp':     return RIGHT.has(k) ? 1 : (k==='rub' ? 1.05 : 0.9);
   }
   return 1;
@@ -526,6 +548,19 @@ function murmur(out, sr, t0, t1, amp, bands, envFn, tex){
     out[i0+i]+=amp*e*mix[i];
   }
 }
+// a pure, slightly wavering tone with harmonics: the "cooing" quality of a musical murmur
+function musical(out, sr, t0, t1, amp, f0, envFn){
+  if(amp<=0.003) return;
+  const i0=Math.max(0,Math.round(t0*sr)), i1=Math.min(out.length,Math.round(t1*sr)), n=i1-i0;
+  if(n<=8) return;
+  let ph=0;
+  for(let i=0;i<n;i++){
+    const u=i/(n-1), f=f0*(1+0.012*Math.sin(2*Math.PI*5.5*i/sr));
+    ph += 2*Math.PI*f/sr;
+    const e=envFn(u)*Math.min(1,i/(0.01*sr))*Math.min(1,(n-i)/(0.01*sr));
+    out[i0+i] += amp*e*(Math.sin(ph)+0.45*Math.sin(2*ph)+0.18*Math.sin(3*ph));
+  }
+}
 const diamond = (pk, fl) => u => { fl=fl||0; const e = u<pk ? Math.pow(u/pk,1.1) : Math.pow((1-u)/(1-pk),0.9); return fl+(1-fl)*e; };
 const decres = (p) => u => Math.pow(1-u, p||1.2);
 const plateau = u => 0.85+0.15*Math.sin(Math.PI*Math.min(1,u*1.4));
@@ -588,6 +623,8 @@ function synthBeat(p, RR, tAbs, sr){
   if(les==='mavr'){ mechClose = true; if(sev==='moderate') a2 = s2 + 0.025; }
   if(les==='ps'){ p2 = a2 + [0.035,0.055,0.08][sv] + 0.02*insp; p2amp = [0.45,0.32,0.18][sv]; }
   if(les==='pr'){ p2amp = sev==='severe' ? 0.6 : 0.5; }
+  if(les==='gs'){ p2amp = [0.95,1.1,1.25][sv]; p2 = a2 + 0.016 + 0.014*insp; }
+  if(les==='amr'){ a2 -= 0.006*sv; if(sv>=1) p2amp = [0.5,0.8,1.0][sv]; }
   if(les==='asd'){ p2 = sv===0 ? a2 + 0.026 + 0.022*insp : a2 + [0.045,0.055,0.065][sv]; p2amp = 0.6; }
   if(les==='vsd' && sev==='severe'){ p2amp = 1.15; p2 = a2 + 0.012 + 0.012*insp; }
   if(les==='pda' && sev==='severe'){ p2amp = 0.9; }
@@ -598,6 +635,7 @@ function synthBeat(p, RR, tAbs, sr){
   if(les==='mr'){ m1amp = [0.8,0.65,0.5][sv]; }
   if(les==='ms'){ m1amp = 1.55; s1base = 68; s1tau = 0.016; s1sharp = 1.6; }
   if(les==='hfref'){ m1amp = [0.8,0.65,0.5][sv]; }
+  if(les==='amr'){ m1amp = 0.9; }
   m1amp *= varS1;
   valve(out,sr,T(s1),m1amp*G('M1'),s1base,s1tau,s1sharp);
   valve(out,sr,T(s1+0.022),m1amp*0.55*G('T1'),s1base*1.1,s1tau*0.8,s1sharp);
@@ -646,6 +684,19 @@ function synthBeat(p, RR, tAbs, sr){
     addSeg(ra, sinus && sev!=='severe' ? Math.min(mdEnd, rb-pre-0.02) : rb, 'Mid-diastolic rumble','MDM',G('lv'));
     if(sinus && sev!=='severe') addSeg(rb-pre,rb,'Presystolic','PSA',G('lv'));
     break; }
+  case 'gs': {
+    const a=p2+0.004, len=[0.35,0.55,0.8][sv], b=a+len*(nextS1-0.02-a);
+    M('gs',a,b,[0.1,0.14,0.17][sv]*(1+0.15*insp),B.blowHi,decres(1.1));
+    addSeg(a,b,'Graham Steell murmur','EDM',G('gs'));
+    if(sev==='severe' && sinus){ const s4=RR-0.035; thud(s4,0.4*RI,'rv'); addEv(s4,'S4',G('rv')); }
+    break; }
+  case 'amr': {
+    const a=s1-0.006, end=[0.85,0.68,0.52][sv], b=s1+end*(a2-s1);
+    M('mr',a,b,[0.2,0.17,0.12][sv],B.blow,u=>Math.min(1,u*12)*Math.pow(1-u,1.1));
+    addSeg(a,b,'Early systolic murmur','ESM',G('mr'));
+    if(sinus){ const s4=RR-0.035; thud(s4,[0.4,0.5,0.6][sv],'lv'); addEv(s4,'S4',G('lv')); }
+    if(sv>=1){ const s3=a2+0.13; thud(s3,[0,0.45,0.6][sv],'lv'); addEv(s3,'S3',G('lv')); }
+    break; }
   case 'mvp': {
     const frac = mvpFrac(man) * [1,0.85,0.6][sv];
     const c = s1 + 0.03 + frac*(s2 - s1 - 0.03);
@@ -657,8 +708,12 @@ function synthBeat(p, RR, tAbs, sr){
   case 'as': {
     if(sev!=='severe'){ const ec=s1+0.055; click(out,sr,T(ec),[0.6,0.4][sv]*G('ec')); addEv(ec,'EC',G('ec')); }
     const a=s1+0.06, b=a2-0.008, pk=[0.3,0.45,0.62][sv];
-    M('ao',a,b,[0.17,0.24,0.28][sv],B.harsh,diamond(pk),48);
+    M('ao',a,b,[0.17,0.24,0.28][sv]*(loc==='M'||loc==='X' ? 0.55 : 1),B.harsh,diamond(pk),48);
     addSeg(a,b,'Ejection systolic murmur','ESM',G('ao'));
+    if(sv>=1){ // Gallavardin: the high-frequency part radiates to the apex and sounds musical
+      musical(out,sr,T(a),T(b),[0,0.09,0.11][sv]*G('gal')*MG('gal'),[0,430,470][sv],diamond(pk));
+      if(G('gal')>0.5) addSeg(a,b,'Musical (Gallavardin)','Gal.',G('gal'));
+    }
     if(sev==='severe' && sinus){ const s4=RR-0.035; thud(s4,0.5,'lv'); addEv(s4,'S4',G('lv')); }
     break; }
   case 'ar': {
@@ -1035,6 +1090,7 @@ function manEffectHere(){
   }
   let g = manGain(m,k,les);
   if(m==='insp' && RIGHT.has(k) && les!=='pda' && les!=='asd') g = 1.45;
+  if(m==='insp' && les==='gs') g = 1.2;
   if(m==='lean' && les==='normal') return '';
   const what = {peri:'The rub', hfref:'The S3', ms:'The rumble', mavr:'The flow murmur'}[les] || 'The murmur';
   if(g>=1.15) return `Here: ${what.toLowerCase()} gets louder.`;

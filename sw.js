@@ -1,5 +1,5 @@
 // Offline support: every page is cached on first visit, pages refresh from the network when online.
-const VERSION = 'ctl-v16';
+const VERSION = 'ctl-v17';
 const PRECACHE = [
   "./",
   "index.html",
@@ -10,6 +10,8 @@ const PRECACHE = [
   "icons/apple-touch-icon.png",
   "rhc-simulator/",
   "ecg-simulator/",
+  "ecg-basics/",
+  "ecg-basics/ecg-engine.js",
   "pv-loop-simulator/",
   "heart-sounds/",
   "ticker-talks/",

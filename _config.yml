@@ -2,3 +2,4 @@
 exclude:
   - pipeline
   - README.md
+  - tools
